@@ -24,10 +24,10 @@ app.use(cookieParser())
 app.use(rateLimiter.global)
 app.use(timeout(config.connectionTimeout))
 
-app.use('/v1/auth', rateLimiter.auth, authRoutes)
-app.use('/v1/users', userRoutes)
-app.use('/v1/profile', profileRoutes)
-app.use('/v1/roles', roleRoutes)
+app.use('/v1/:appId/auth', rateLimiter.auth, authRoutes)
+app.use('/v1/:appId/users', userRoutes)
+app.use('/v1/:appId/profile', profileRoutes)
+app.use('/v1/:appId/roles', roleRoutes)
 
 app.use(errorHandler)
 

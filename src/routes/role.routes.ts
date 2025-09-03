@@ -7,7 +7,7 @@ import { CreateRoleDto, DeleteRoleDto, ReorderRoleDto, UpdateRoleDto } from '../
 import { upload } from '../middlewares/upload.middleware'
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
 
-const router: Router = express.Router()
+const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',

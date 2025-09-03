@@ -12,7 +12,7 @@ import {
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
 import { upload } from '../middlewares/upload.middleware'
 
-const router: Router = express.Router()
+const router: Router = express.Router({ mergeParams: true })
 
 router.post(
   '/register',

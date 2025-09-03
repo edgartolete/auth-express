@@ -7,7 +7,7 @@ import { asyncHandler } from '../utils/handler.util'
 import { upload } from '../middlewares/upload.middleware'
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
 
-const router: Router = express.Router()
+const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
