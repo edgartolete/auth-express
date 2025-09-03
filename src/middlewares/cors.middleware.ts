@@ -10,7 +10,7 @@ export const corsOptions = {
     }
 
     if (config.isProduction) {
-      const allowedDomains = (process.env.ALLOWED_DOMAIN || '').split(',').map((d) => d.trim())
+      const allowedDomains = (process.env.ALLOWED_DOMAINS || '').split(',').map((d) => d.trim())
       if (allowedDomains.includes(origin)) {
         return callback(null, true)
       }

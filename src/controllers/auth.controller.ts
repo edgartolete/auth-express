@@ -190,7 +190,10 @@ export const authController = {
       .set({ isActive: false })
       .where(eq(sessions.refreshToken, refreshToken))
 
-    res.status(200).json({ success: true, message: 'User logged out successfully' })
+    res
+      .clearCookie('refreshToken', { path: '/' })
+      .status(200)
+      .json({ success: true, message: 'User logged out successfully' })
   },
   refreshToken: async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken
