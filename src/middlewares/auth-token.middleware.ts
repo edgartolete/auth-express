@@ -3,9 +3,11 @@ import { extractTokenFromHeader } from '../utils/request.util'
 import { MyJwtPayload, validateToken } from '../utils/token.util'
 import { redisClient } from '../services/cache.service'
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: MyJwtPayload
+declare global {
+  namespace Express {
+    interface Request {
+      user?: MyJwtPayload
+    }
   }
 }
 

@@ -4,26 +4,25 @@ import { and, desc, eq, or } from 'drizzle-orm'
 import { users } from '../db/schema/users.schema'
 import { config } from '../config'
 import { generateRandomCode, generateRandomNumbers } from '../utils/helpers.util'
-import { redisClient } from '../services/cache.service'
 import { sendVerificationCode } from '../services/email.service'
 import * as bcrypt from 'bcrypt'
 import { profiles } from '../db/schema/profiles.schema'
 import { generateAccessToken, generateRefreshToken, validateToken } from '../utils/token.util'
 import { sessions } from '../db/schema/sessions.schema'
-import { addDays } from 'date-fns'
+import { addDays, isBefore } from 'date-fns'
 import ms from 'ms'
-import { extractTokenFromHeader } from '../utils/request.util'
+import { redisClient } from '../services/cache.service'
 
 export const authController = {
   register: async (req: Request, res: Response) => {
-    const { username, email, password, roleId, code, autoLogin } = req.body
+    const { username, email, password, code, autoLogin } = req.body
 
     const searchResult = await db.query.users.findFirst({
       where: or(eq(users.username, username), eq(users.email, email))
     })
 
     if (searchResult) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: 'Username or email already exists'
       })
@@ -72,7 +71,6 @@ export const authController = {
     const newUser = {
       username,
       email,
-      roleId,
       password: hashedPassword,
       orderId: latest?.orderId ? Number(latest?.orderId + 1) : 1
     }
@@ -123,19 +121,13 @@ export const authController = {
       where: and(eq(sessions.userId, searchResult!.id), eq(sessions.userAgent, userAgent))
     })
 
-    if (sessionResult) {
+    if (sessionResult?.isActive) {
       return res.status(400).json({ success: false, message: 'You are already loggedin' })
     }
 
     const accessToken = generateAccessToken(payload)
 
     const refreshToken = generateRefreshToken(payload, rememberMe)
-
-    redisClient.setex(
-      accessToken,
-      ms(config.auth.login.accessTokenDuration) / 1000,
-      `${searchResult!.id}`
-    )
 
     const refreshExpiryMilliseconds = ms(
       rememberMe ? config.auth.login.rememberMeDuration : config.auth.login.refreshTokenDuration
@@ -152,14 +144,18 @@ export const authController = {
     }
 
     const sessionSearch = await db.query.sessions.findFirst({
-      columns: { id: true },
       where: and(eq(sessions.userId, searchResult!.id), eq(sessions.userAgent, userAgent))
     })
 
     if (sessionSearch?.id) {
       await db
         .update(sessions)
-        .set({ refreshToken, expiryDate: addDays(new Date(), refreshExpiryDays) })
+        .set({
+          refreshToken,
+          ipAddress,
+          expiryDate: addDays(new Date(), refreshExpiryDays),
+          isActive: true
+        })
         .where(eq(sessions.id, sessionSearch.id))
     }
 
@@ -179,7 +175,6 @@ export const authController = {
   },
   logout: async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken
-    const accessToken = extractTokenFromHeader(req) || ''
 
     const sessionResult = await db.query.sessions.findFirst({
       columns: { userId: true },
@@ -190,9 +185,10 @@ export const authController = {
       return res.status(400).json({ success: false, message: 'Refresh token expired or invalid' })
     }
 
-    redisClient.del(accessToken)
-
-    await db.delete(sessions).where(eq(sessions.refreshToken, refreshToken))
+    await db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.refreshToken, refreshToken))
 
     res.status(200).json({ success: true, message: 'User logged out successfully' })
   },
@@ -200,15 +196,29 @@ export const authController = {
     const refreshToken = req.cookies.refreshToken
 
     const sessionResult = await db.query.sessions.findFirst({
-      columns: { userId: true },
       where: eq(sessions.refreshToken, refreshToken),
       with: { user: true }
     })
 
     const { expired, decoded } = validateToken(refreshToken)
 
-    if (!sessionResult || expired) {
-      return res.status(400).json({ success: false, message: 'Refresh token expired or invalid' })
+    if (
+      expired ||
+      (sessionResult && isBefore(new Date(sessionResult?.expiryDate || ''), new Date()))
+    ) {
+      await db
+        .update(sessions)
+        .set({ isActive: false })
+        .where(eq(sessions.refreshToken, refreshToken))
+
+      return res.status(400).json({ success: false, message: 'Token is already expired' })
+    }
+
+    if (!sessionResult?.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot refresh as this user already logout. Session ended.'
+      })
     }
 
     const { id, username, role, profileId } = decoded || {}
@@ -217,13 +227,9 @@ export const authController = {
 
     const accessToken = generateAccessToken(payload)
 
-    redisClient.setex(
-      accessToken,
-      ms(config.auth.login.accessTokenDuration) / 1000,
-      `${sessionResult!.userId}`
-    )
-
-    res.status(200).json({ success: true, message: 'Token refreshed successfully', accessToken })
+    return res
+      .status(200)
+      .json({ success: true, message: 'Token refreshed successfully', accessToken })
   },
   forgotRequest: async (req: Request, res: Response) => {
     const { email } = req.body
@@ -294,6 +300,6 @@ export const authController = {
 
     await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId))
 
-    res.status(200).json({ success: true, message: 'Password reset successfully' })
+    return res.status(200).json({ success: true, message: 'Password reset successfully' })
   }
 }
