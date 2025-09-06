@@ -65,7 +65,8 @@ export const userController = {
     const userId = Number(req.params.id)
 
     const result = await db.query.users.findFirst({
-      where: and(eq(users.id, userId)),
+      columns: { id: true, username: true, email: true, createdAt: true },
+      where: and(eq(users.id, userId), eq(users.isActive, true)),
       with: {
         profile: true
       }

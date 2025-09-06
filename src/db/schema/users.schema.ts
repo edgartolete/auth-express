@@ -15,6 +15,7 @@ import { apps } from './apps.schema'
 import { groupRoles } from './groupRoles.schema'
 import { resourceRoles } from './resourceRoles.schema'
 import { lower } from '../../utils/schema.util'
+import { userRoles } from './userRoles.schema'
 
 export const users = mysqlTable(
   'users',
@@ -40,6 +41,7 @@ export const users = mysqlTable(
 export const userRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles),
   sessions: many(sessions),
+  userRoles: many(userRoles),
   groupRoles: many(groupRoles),
   resourceRoles: many(resourceRoles),
   app: one(apps, {

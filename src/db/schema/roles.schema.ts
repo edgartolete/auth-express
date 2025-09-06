@@ -5,6 +5,7 @@ import { groupRoles } from './groupRoles.schema'
 import { resourceRoles } from './resourceRoles.schema'
 import { lower } from '../../utils/schema.util'
 import { resourceRolePermissions } from './resourceRolePermissions.schema'
+import { userRoles } from './userRoles.schema'
 
 //ROLES: admin | operator
 export const roles = mysqlTable(
@@ -25,6 +26,7 @@ export const roles = mysqlTable(
 )
 
 export const roleRelations = relations(roles, ({ one, many }) => ({
+  userRoles: many(userRoles),
   groupRoles: many(groupRoles),
   resourceRoles: many(resourceRoles),
   resourceRolePermissions: many(resourceRolePermissions),
