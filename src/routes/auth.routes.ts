@@ -21,7 +21,7 @@ router.post(
   asyncHandler(authController.register)
 )
 router.post('/login', upload.none(), validateBody(LoginAuthDto), asyncHandler(authController.login))
-router.post('/logout', authTokenGuard(), asyncHandler(authController.logout))
+router.post('/logout', authTokenGuard, asyncHandler(authController.logout))
 router.post('/refresh', asyncHandler(authController.refreshToken))
 router.post(
   '/forgot-request',
@@ -38,7 +38,7 @@ router.post(
 router.post(
   '/reset-password',
   upload.none(),
-  authTokenGuard(['self']),
+  authTokenGuard,
   validateBody(ResetPasswordAuthDto),
   asyncHandler(authController.resetPassword)
 )

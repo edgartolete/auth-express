@@ -20,8 +20,6 @@ export function generateRefreshToken(payload: PayloadT, remember: boolean = fals
 export interface MyJwtPayload extends JwtPayload {
   id: number
   username: string
-  role?: string | null
-  profileId: number
 }
 
 export function validateToken(token: string): { expired: boolean; decoded?: MyJwtPayload } {

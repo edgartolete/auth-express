@@ -11,29 +11,29 @@ const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   upload.none(),
   validateQueryParams(queryFilterDto),
   asyncHandler(roleController.getAllRoles)
 )
-router.get('/:id', authTokenGuard(['admin']), asyncHandler(roleController.getRoleById))
+router.get('/:id', authTokenGuard, asyncHandler(roleController.getRoleById))
 router.post(
   '/',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   upload.none(),
   validateBody(CreateRoleDto),
   asyncHandler(roleController.createRole)
 )
 router.patch(
   '/:id',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   upload.none(),
   validateBody(UpdateRoleDto),
   asyncHandler(roleController.updateRole)
 )
 router.delete(
   '/:id',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   upload.none(),
   validateBody(DeleteRoleDto),
   asyncHandler(roleController.deleteRole)

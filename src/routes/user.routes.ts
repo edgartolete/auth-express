@@ -11,16 +11,16 @@ const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   validateQueryParams(queryFilterDto),
   asyncHandler(userController.getAllUsers)
 )
 
-router.get('/:id', authTokenGuard(['admin', 'self']), asyncHandler(userController.getUserById))
+router.get('/:id', authTokenGuard, asyncHandler(userController.getUserById))
 
 router.post(
   '/',
-  authTokenGuard(['admin']),
+  authTokenGuard,
   upload.none(),
   validateBody(CreateUserDto),
   asyncHandler(userController.createUser)
@@ -28,7 +28,7 @@ router.post(
 
 router.patch(
   '/:id',
-  authTokenGuard(['admin', 'self']),
+  authTokenGuard,
   upload.none(),
   validateBody(UpdateUserDto),
   asyncHandler(userController.updateUser)
@@ -36,7 +36,7 @@ router.patch(
 
 router.delete(
   '/:id',
-  authTokenGuard(['admin', 'self']),
+  authTokenGuard,
   upload.none(),
   validateBody(DeleteUserDto),
   asyncHandler(userController.deleteUser)

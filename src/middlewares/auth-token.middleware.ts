@@ -10,26 +10,22 @@ declare global {
   }
 }
 
-type Role = string | null | undefined
+export async function authTokenGuard(req: Request, res: Response, next: NextFunction) {
+  const accessToken = extractTokenFromHeader(req)
 
-export function authTokenGuard(allowedRoles: Role[] = []) {
-  return async function (req: Request, res: Response, next: NextFunction) {
-    const accessToken = extractTokenFromHeader(req)
-
-    if (!accessToken) {
-      return res.status(401).json({ success: false, message: 'Authorization header missing' })
-    }
-
-    const { expired, decoded } = validateToken(accessToken)
-
-    if (expired || !decoded) {
-      return res.status(401).json({ success: false, message: 'Token Invalid or expired token' })
-    }
-
-    const { id, username, role, profileId } = decoded
-
-    req.user = { id, username, role, profileId }
-
-    next()
+  if (!accessToken) {
+    return res.status(401).json({ success: false, message: 'Authorization header missing' })
   }
+
+  const { expired, decoded } = validateToken(accessToken)
+
+  if (expired || !decoded) {
+    return res.status(401).json({ success: false, message: 'Token Invalid or expired token' })
+  }
+
+  const { id, username } = decoded
+
+  req.user = { id, username }
+
+  next()
 }
