@@ -1,21 +1,22 @@
 import express, { Router } from 'express'
 import { appController } from '../controllers/app.controller'
 import { appCodeGuard } from '../middlewares/appcode-guard.middlware'
+import { asyncHandler } from '../utils/handler.util'
 
 const router: Router = express.Router({ mergeParams: true })
 
-router.get('/', appController.getAllApps)
+router.get('/', asyncHandler(appController.getAllApps))
 
-router.get('/:appCode', appCodeGuard, appController.getAppById)
+router.get('/:appCode', appCodeGuard, asyncHandler(appController.getAppById))
 
-router.post('/', appController.createApp)
+router.post('/', asyncHandler(appController.createApp))
 
-router.patch('/:appCode', appCodeGuard, appController.updateApp)
+router.patch('/:appCode', appCodeGuard, asyncHandler(appController.updateApp))
 
-router.delete('/:appCode', appCodeGuard, appController.deleteApp)
+router.delete('/:appCode', appCodeGuard, asyncHandler(appController.deleteApp))
 
-router.post('/login', appController.login)
+router.post('/login', asyncHandler(appController.login))
 
-router.post('/logout', appController.logout)
+router.post('/logout', asyncHandler(appController.logout))
 
 export { router as appRoutes }

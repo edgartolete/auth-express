@@ -1,33 +1,28 @@
 import express, { Router } from 'express'
 import { resourceController } from '../controllers/resource.controller'
+import { asyncHandler } from '../utils/handler.util'
 
 const router: Router = express.Router({ mergeParams: true })
 
 // get all resources
-router.get('/', resourceController.getAllResources)
+router.get('/', asyncHandler(resourceController.getAllResources))
 
 // get single resource
-router.get('/:id', resourceController.getResourceById)
+router.get('/:id', asyncHandler(resourceController.getResourceById))
 
 // create resource
-router.post('/', resourceController.createResource)
+router.post('/', asyncHandler(resourceController.createResource))
 
 // update resource
-router.patch('/:id', resourceController.updateResource)
+router.patch('/:id', asyncHandler(resourceController.updateResource))
 
 // delete resource
-router.delete('/:id', resourceController.deleteResource)
+router.delete('/:id', asyncHandler(resourceController.deleteResource))
 
 // get users from resource
-router.get('/:id/users', resourceController.getResourceUsers)
-
-// get roles from resource
-router.get('/:id/roles', resourceController.getResourceRoles)
+router.get('/:id/users', asyncHandler(resourceController.getResourceUsers))
 
 // add or remove user(s) to a resource
-router.patch('/:id/users', resourceController.updateResourceUsers)
-
-// add or remove role(s) to a resource
-router.patch('/:id/roles', resourceController.updateResourceRoles)
+router.patch('/:id/users', asyncHandler(resourceController.updateResourceUsers))
 
 export { router as resourceRoutes }

@@ -1,16 +1,17 @@
 import express, { Router } from 'express'
 import { actionController } from '../controllers/action.controller'
+import { asyncHandler } from '../utils/handler.util'
 
 const router: Router = express.Router({ mergeParams: true })
 
-router.get('/', actionController.getAllActions)
+router.get('/', asyncHandler(actionController.getAllActions))
 
-router.get('/:id', actionController.getActionById)
+router.get('/:id', asyncHandler(actionController.getActionById))
 
-router.post('/', actionController.createAction)
+router.post('/', asyncHandler(actionController.createAction))
 
-router.patch('/:id', actionController.updateAction)
+router.patch('/:id', asyncHandler(actionController.updateAction))
 
-router.delete('/:id', actionController.deleteAction)
+router.delete('/:id', asyncHandler(actionController.deleteAction))
 
 export { router as actionRoutes }
