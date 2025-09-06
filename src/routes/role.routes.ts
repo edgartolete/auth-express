@@ -3,7 +3,7 @@ import { roleController } from '../controllers/role.controller'
 import { asyncHandler } from '../utils/handler.util'
 import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
 import { queryFilterDto } from '../dto/filter.dto'
-import { CreateRoleDto, DeleteRoleDto, ReorderRoleDto, UpdateRoleDto } from '../dto/role.dto'
+import { CreateRoleDto, DeleteRoleDto, UpdateRoleDto } from '../dto/role.dto'
 import { upload } from '../middlewares/upload.middleware'
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
 
@@ -23,12 +23,6 @@ router.post(
   upload.none(),
   validateBody(CreateRoleDto),
   asyncHandler(roleController.createRole)
-)
-router.patch(
-  '/reorder',
-  authTokenGuard(['admin']),
-  validateBody(ReorderRoleDto),
-  asyncHandler(roleController.reorderRoles)
 )
 router.patch(
   '/:id',

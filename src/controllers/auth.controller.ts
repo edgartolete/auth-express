@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { db } from '../db'
-import { and, desc, eq, or } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import { users } from '../db/schema/users.schema'
 import { config } from '../config'
 import { generateRandomCode, generateRandomNumbers } from '../utils/helpers.util'
@@ -18,7 +18,10 @@ export const authController = {
     const { username, email, password, code, autoLogin } = req.body
 
     const searchResult = await db.query.users.findFirst({
-      where: or(eq(users.username, username), eq(users.email, email))
+      where: and(
+        eq(users.appId, req.appId),
+        or(eq(users.username, username), eq(users.email, email))
+      )
     })
 
     if (searchResult) {
@@ -40,7 +43,7 @@ export const authController = {
       }
 
       await redisClient.setex(
-        `${username}-${email}`,
+        `${req.appId}-${username}-${email}`,
         config.auth.register.codeExpiry,
         generatedCode
       )
@@ -54,7 +57,7 @@ export const authController = {
       return res.status(200).json({ success: true, message: 'Verification code sent' })
     }
 
-    const storedCode = await redisClient.get(`${username}-${email}`)
+    const storedCode = await redisClient.get(`${req.appId}-${username}-${email}`)
 
     if (config.auth.register.emailVerify && !!code && storedCode !== code) {
       return res.status(400).json({ success: false, message: 'Code is invalid or expired' })
@@ -62,17 +65,11 @@ export const authController = {
 
     const hashedPassword = bcrypt.hashSync(password, 10)
 
-    const [latest] = await db
-      .select({ orderId: users.orderId })
-      .from(users)
-      .orderBy(desc(users.orderId))
-      .limit(1)
-
     const newUser = {
+      appId: req.appId,
       username,
       email,
-      password: hashedPassword,
-      orderId: latest?.orderId ? Number(latest?.orderId + 1) : 1
+      password: hashedPassword
     }
 
     const result = await db.insert(users).values(newUser)
@@ -82,7 +79,39 @@ export const authController = {
     await db.insert(profiles).values({ userId })
 
     if (autoLogin) {
-      //TODO: login the user after signup
+      const ipAddress = req.ip || ''
+
+      const userAgent = req.headers['user-agent'] || ''
+
+      const payload = { id: userId, username }
+
+      const accessToken = generateAccessToken(payload)
+
+      const refreshToken = generateRefreshToken(payload)
+
+      const refreshExpiryMilliseconds = ms(config.auth.login.refreshTokenDuration)
+
+      const refreshExpiryDays = refreshExpiryMilliseconds / (1000 * 60 * 60 * 24)
+
+      const newSession = {
+        ipAddress,
+        userAgent,
+        refreshToken,
+        userId,
+        expiryDate: addDays(new Date(), refreshExpiryDays)
+      }
+
+      await db.insert(sessions).values(newSession)
+
+      return res
+        .cookie('refreshToken', refreshToken, {
+          httpOnly: config.isProduction,
+          secure: config.isProduction,
+          sameSite: 'none',
+          maxAge: refreshExpiryMilliseconds
+        })
+        .status(201)
+        .json({ success: true, message: 'User Registered and logged in successfully', accessToken })
     }
 
     return res.status(201).json({ success: true, message: 'Registered successfully' })
@@ -96,8 +125,11 @@ export const authController = {
     const userAgent = req.headers['user-agent'] || ''
 
     const searchResult = await db.query.users.findFirst({
-      with: { profile: true, role: true },
-      where: or(eq(users.username, username), eq(users.email, email))
+      with: { profile: true },
+      where: and(
+        eq(users.appId, req.appId),
+        or(eq(users.username, username), eq(users.email, email))
+      )
     })
 
     if (!searchResult) {
@@ -112,11 +144,10 @@ export const authController = {
 
     const payload = {
       id: searchResult!.id,
-      username: searchResult!.username,
-      role: searchResult?.role?.name || null,
-      profileId: searchResult?.profile?.id!
+      username: searchResult!.username
     }
 
+    //find if user already logged in on same device
     const sessionResult = await db.query.sessions.findFirst({
       where: and(eq(sessions.userId, searchResult!.id), eq(sessions.userAgent, userAgent))
     })
@@ -135,19 +166,7 @@ export const authController = {
 
     const refreshExpiryDays = refreshExpiryMilliseconds / (1000 * 60 * 60 * 24)
 
-    const newSession = {
-      ipAddress,
-      userAgent,
-      refreshToken,
-      userId: searchResult!.id,
-      expiryDate: addDays(new Date(), refreshExpiryDays)
-    }
-
-    const sessionSearch = await db.query.sessions.findFirst({
-      where: and(eq(sessions.userId, searchResult!.id), eq(sessions.userAgent, userAgent))
-    })
-
-    if (sessionSearch?.id) {
+    if (sessionResult?.id) {
       await db
         .update(sessions)
         .set({
@@ -156,10 +175,18 @@ export const authController = {
           expiryDate: addDays(new Date(), refreshExpiryDays),
           isActive: true
         })
-        .where(eq(sessions.id, sessionSearch.id))
+        .where(eq(sessions.id, sessionResult.id))
     }
 
-    if (!sessionSearch) {
+    if (!sessionResult) {
+      const newSession = {
+        ipAddress,
+        userAgent,
+        refreshToken,
+        userId: searchResult!.id,
+        expiryDate: addDays(new Date(), refreshExpiryDays)
+      }
+
       await db.insert(sessions).values(newSession)
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "hyc-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "packageManager": "pnpm@9.1.1",
   "engines": {
     "pnpm": ">=9.0.0"
@@ -10,9 +10,12 @@
     "preinstall": "npx only-allow pnpm",
     "tsrun": "ts-node -T -P ./tsconfig.json ./src/app.ts",
     "dev": "concurrently \"npx tsc -w\" \"nodemon ./dist/app.js \"",
+    "build": "rimraf dist && npx tsc",
+    "start": "node ./dist/app.js",
     "prepare": "husky",
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate"
+    "migrate": "drizzle-kit migrate",
+    "seed": "ts-node src/db/seed/index.ts"
   },
   "author": "",
   "license": "ISC",

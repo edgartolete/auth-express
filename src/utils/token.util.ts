@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import { config } from '../config'
 dotenv.config({ quiet: true })
 
-type PayloadT = { id: number; username: string; role?: string | null; profileId: number }
+type PayloadT = { id: number; username: string }
 export function generateAccessToken(payload: PayloadT): string {
   const secretKey: Secret = `${process.env.TOKEN_SECRET_KEY}`
   return jwt.sign(payload, secretKey, { expiresIn: config.auth.login.accessTokenDuration })

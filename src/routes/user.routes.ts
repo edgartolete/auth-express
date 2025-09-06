@@ -2,7 +2,7 @@ import express, { Router } from 'express'
 import { userController } from '../controllers/user.controller'
 import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
 import { queryFilterDto } from '../dto/filter.dto'
-import { CreateUserDto, DeleteUserDto, ReorderUserDto, UpdateUserDto } from '../dto/user.dto'
+import { CreateUserDto, DeleteUserDto, UpdateUserDto } from '../dto/user.dto'
 import { asyncHandler } from '../utils/handler.util'
 import { upload } from '../middlewares/upload.middleware'
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
@@ -24,13 +24,6 @@ router.post(
   upload.none(),
   validateBody(CreateUserDto),
   asyncHandler(userController.createUser)
-)
-
-router.patch(
-  '/reorder',
-  authTokenGuard(['admin']),
-  validateBody(ReorderUserDto),
-  asyncHandler(userController.reorderUsers)
 )
 
 router.patch(

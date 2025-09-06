@@ -12,6 +12,11 @@ import cors from 'cors'
 import { corsOptions } from './middlewares/cors.middleware'
 import cookieParser from 'cookie-parser'
 import { roleRoutes } from './routes/role.routes'
+import { actionRoutes } from './routes/action.route'
+import { groupRoutes } from './routes/group.routes'
+import { resourceRoutes } from './routes/resource.routes'
+import { appRoutes } from './routes/app.routes'
+import { appCodeGuard } from './middlewares/appcode-guard.middlware'
 
 const app: Express = express()
 const port = 3000
@@ -24,16 +29,20 @@ app.use(cookieParser())
 app.use(rateLimiter.global)
 app.use(timeout(config.connectionTimeout))
 
-app.use('/v1/:appId/auth', rateLimiter.auth, authRoutes)
-app.use('/v1/:appId/users', userRoutes)
-app.use('/v1/:appId/profile', profileRoutes)
-app.use('/v1/:appId/roles', roleRoutes)
+app.get('/', (_, res) => {
+  res.send('v1 API working!')
+})
+
+app.use('/v1', appRoutes)
+app.use('/v1/:appCode/auth', appCodeGuard, rateLimiter.auth, authRoutes)
+app.use('/v1/:appCode/users', appCodeGuard, userRoutes)
+app.use('/v1/:appCode/profile', appCodeGuard, profileRoutes)
+app.use('/v1/:appCode/roles', appCodeGuard, roleRoutes)
+app.use('/v1/:appCode/actions', appCodeGuard, actionRoutes)
+app.use('/v1/:appCode/groups', appCodeGuard, groupRoutes)
+app.use('/v1/:appCode/resources', appCodeGuard, resourceRoutes)
 
 app.use(errorHandler)
-
-app.get('/', (_, res) => {
-  res.send('API working!')
-})
 
 app.listen(port, () => {
   console.log(`App listening on port ${port}`)

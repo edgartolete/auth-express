@@ -1,12 +1,12 @@
 import { Request, Response } from 'express'
 import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
-import { and, asc, desc, eq, like, SQL } from 'drizzle-orm'
+import { and, eq, like, SQL } from 'drizzle-orm'
 import { roles } from '../db/schema/roles.schema'
 import { db } from '../db'
 
 export const roleController = {
   getAllRoles: async (req: Request, res: Response) => {
-    const { keyword, pageNum, pageSize, order, activeOnly } = getFilters(req)
+    const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -18,11 +18,13 @@ export const roleController = {
       conditions.push(eq(roles.isActive, true))
     }
 
-    const whereClause = conditions.length > 0 ? { where: and(...conditions) } : { where: undefined }
+    conditions.push(eq(roles.appId, req.appId))
+
+    const whereClause =
+      conditions.length > 0 ? { where: and(...conditions) } : { where: eq(roles.appId, req.appId) }
 
     const result = await db.query.roles.findMany({
       ...whereClause,
-      orderBy: [order === 'desc' ? desc(roles.orderId) : asc(roles.orderId)],
       ...paginateFilter(pageSize, pageNum)
     })
 
@@ -57,7 +59,7 @@ export const roleController = {
   },
   createRole: async (req: Request, res: Response) => {
     const searchResult = await db.query.roles.findFirst({
-      where: eq(roles.name, req.body.name)
+      where: and(eq(roles.appId, req.appId), eq(roles.name, req.body.name))
     })
 
     if (searchResult) {
@@ -67,15 +69,9 @@ export const roleController = {
       })
     }
 
-    const [latest] = await db
-      .select({ orderId: roles.orderId })
-      .from(roles)
-      .orderBy(desc(roles.orderId))
-      .limit(1)
-
     const newRole = {
-      ...req.body,
-      orderId: latest?.orderId ? Number(latest?.orderId + 1) : 1
+      appId: req.appId,
+      ...req.body
     }
 
     const result = await db.insert(roles).values(newRole)
@@ -102,16 +98,6 @@ export const roleController = {
 
     res.status(200).json({ success: true, message: `Updated role with ID ${roleId}`, data: result })
   },
-  reorderRoles: async (req: Request, res: Response) => {
-    await db.transaction(async (tx) => {
-      for (const i of req.body) {
-        await tx.update(roles).set({ orderId: i.orderId }).where(eq(roles.id, i.id))
-      }
-    })
-
-    res.status(200).json({ success: true, message: 'roles reordered successfully' })
-  },
-
   deleteRole: async (req: Request, res: Response) => {
     const roleId = Number(req.params.id)
 

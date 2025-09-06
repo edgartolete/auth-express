@@ -2,6 +2,7 @@ export type Config = {
   isProduction: boolean
   auth: {
     register: {
+      enabled: boolean
       emailVerify: boolean
       codeGeneration?: 'numbers' | 'random'
       codeExpiry: number | string

@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { extractTokenFromHeader } from '../utils/request.util'
 import { MyJwtPayload, validateToken } from '../utils/token.util'
-import { redisClient } from '../services/cache.service'
 
 declare global {
   namespace Express {
@@ -27,31 +26,7 @@ export function authTokenGuard(allowedRoles: Role[] = []) {
       return res.status(401).json({ success: false, message: 'Token Invalid or expired token' })
     }
 
-    const userId = await redisClient.get(accessToken)
-
-    if (!userId || Number(userId) !== decoded.id) {
-      return res.status(401).json({ success: false, message: 'Token does not exist in record' })
-    }
-
     const { id, username, role, profileId } = decoded
-
-    if (Array.isArray(allowedRoles) && allowedRoles.length) {
-      if (allowedRoles.includes('self')) {
-        if (id !== Number(req.params.id)) {
-          return res
-            .status(403)
-            .json({ success: false, message: 'Forbidden: insufficient permissions' })
-        }
-        req.user = { id, username, role, profileId }
-        return next()
-      }
-
-      if (!allowedRoles.includes(role)) {
-        return res
-          .status(403)
-          .json({ success: false, message: 'Forbidden: insufficient permissions' })
-      }
-    }
 
     req.user = { id, username, role, profileId }
 
