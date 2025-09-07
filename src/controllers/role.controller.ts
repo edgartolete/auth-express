@@ -20,8 +20,7 @@ export const roleController = {
 
     conditions.push(eq(roles.appId, req.appId))
 
-    const whereClause =
-      conditions.length > 0 ? { where: and(...conditions) } : { where: eq(roles.appId, req.appId) }
+    const whereClause = { where: conditions.length > 0 ? and(...conditions) : undefined }
 
     const result = await db.query.roles.findMany({
       ...whereClause,
@@ -55,7 +54,7 @@ export const roleController = {
 
     conditions.push(eq(roles.id, roleId))
 
-    const whereClause = conditions.length > 0 ? { where: and(...conditions) } : { where: undefined }
+    const whereClause = { where: conditions.length > 0 ? and(...conditions) : undefined }
 
     const result = await db.query.roles.findFirst({
       ...whereClause
