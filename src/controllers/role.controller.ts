@@ -25,17 +25,13 @@ export const roleController = {
 
     const result = await db.query.roles.findMany({
       ...whereClause,
+      extras: {
+        total: db.$count(roles).as('total')
+      },
       ...paginateFilter(pageSize, pageNum)
     })
 
-    const totalItems = await db.query.users
-      .findMany({
-        ...whereClause,
-        columns: {
-          id: true
-        }
-      })
-      .then((users) => users.length)
+    const totalItems = result && result.length > 0 ? (result[0] as any).total : 0
 
     const message = result.length ? 'Roles fetched successfully' : 'No roles found'
 
@@ -49,8 +45,20 @@ export const roleController = {
   getRoleById: async (req: Request, res: Response) => {
     const roleId = Number(req.params.id)
 
+    const { activeOnly } = getFilters(req)
+
+    const conditions: (SQL<unknown> | undefined)[] = []
+
+    if (activeOnly) {
+      conditions.push(eq(roles.isActive, true))
+    }
+
+    conditions.push(eq(roles.id, roleId))
+
+    const whereClause = conditions.length > 0 ? { where: and(...conditions) } : { where: undefined }
+
     const result = await db.query.roles.findFirst({
-      where: eq(roles.id, roleId)
+      ...whereClause
     })
 
     const message = result ? 'Role fetched successfully' : 'Role not found'
@@ -59,7 +67,7 @@ export const roleController = {
   },
   createRole: async (req: Request, res: Response) => {
     const searchResult = await db.query.roles.findFirst({
-      where: and(eq(roles.appId, req.appId), eq(roles.name, req.body.name))
+      where: and(eq(roles.appId, req.user?.appId!), eq(roles.name, req.body.name))
     })
 
     if (searchResult) {
@@ -100,12 +108,13 @@ export const roleController = {
   },
   deleteRole: async (req: Request, res: Response) => {
     const roleId = Number(req.params.id)
+    const whereClause = eq(roles.id, roleId)
 
     const isHardDelete = req.body?.hard
 
     const searchResult = await db.query.roles.findFirst({
       columns: { id: true },
-      where: eq(roles.id, roleId)
+      where: whereClause
     })
 
     if (!searchResult) {
@@ -116,14 +125,14 @@ export const roleController = {
     }
 
     if (!isHardDelete) {
-      const result = await db.update(roles).set({ isActive: false }).where(eq(roles.id, roleId))
+      const result = await db.update(roles).set({ isActive: false }).where(whereClause)
 
       return res
         .status(200)
         .json({ success: true, message: `Deleted role with ID ${roleId}`, data: result })
     }
 
-    const result = await db.delete(roles).where(eq(roles.id, roleId))
+    const result = await db.delete(roles).where(whereClause)
 
     return res
       .status(200)

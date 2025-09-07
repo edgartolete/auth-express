@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import { extractTokenFromHeader } from '../utils/request.util'
 import { MyJwtPayload, validateToken } from '../utils/token.util'
+import { apps } from '../db/schema/apps.schema'
+import { eq } from 'drizzle-orm'
+import { db } from '../db'
 
 declare global {
   namespace Express {
@@ -23,9 +26,16 @@ export async function authTokenGuard(req: Request, res: Response, next: NextFunc
     return res.status(401).json({ success: false, message: 'Token Invalid or expired token' })
   }
 
-  const { id, username } = decoded
+  const { id, username, appId } = decoded
 
-  req.user = { id, username }
+  const search = await db.query.apps.findFirst({ where: eq(apps.code, req.params.appCode) })
+
+  if (!appId || appId !== search?.id) {
+    console.log({ appId, searchAppId: search?.id })
+    return res.status(401).json({ success: false, message: 'Token Invalid for this App' })
+  }
+
+  req.user = { id, username, appId }
 
   next()
 }

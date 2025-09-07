@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { redisClient } from '../services/cache.service'
 
-type AllowedRolesT = 'superadmin' | 'admin' | 'moderator' | 'self'
+export type AllowedRolesT = 'superadmin' | 'admin' | 'moderator' | 'self'
 
 export function rootRoleGuard(allowedRoles: AllowedRolesT[] = []) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -11,7 +11,7 @@ export function rootRoleGuard(allowedRoles: AllowedRolesT[] = []) {
       return next()
     }
 
-    const roleKey = `root-role:${req.appId}:${userId}`
+    const roleKey = `root-role:${req.params.appCode}:${userId}`
 
     const storedRoles = (await redisClient.get(roleKey)) as AllowedRolesT | null
 

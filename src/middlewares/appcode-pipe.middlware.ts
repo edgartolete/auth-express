@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-export async function appCodeGuard(req: Request, res: Response, next: NextFunction) {
+export async function appCodePipe(req: Request, res: Response, next: NextFunction) {
   const appCode = req.params.appCode
   const result = await db.query.apps.findFirst({ where: eq(apps.code, appCode) })
 

@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import { config } from '../config'
 dotenv.config({ quiet: true })
 
-type PayloadT = { id: number; username: string }
+type PayloadT = { id: number; username: string; appId: number }
 export function generateAccessToken(payload: PayloadT): string {
   const secretKey: Secret = `${process.env.TOKEN_SECRET_KEY}`
   return jwt.sign(payload, secretKey, { expiresIn: config.auth.login.accessTokenDuration })
@@ -20,6 +20,7 @@ export function generateRefreshToken(payload: PayloadT, remember: boolean = fals
 export interface MyJwtPayload extends JwtPayload {
   id: number
   username: string
+  appId: number
 }
 
 export function validateToken(token: string): { expired: boolean; decoded?: MyJwtPayload } {

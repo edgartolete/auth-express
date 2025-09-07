@@ -16,7 +16,6 @@ import { actionRoutes } from './routes/action.route'
 import { groupRoutes } from './routes/group.routes'
 import { resourceRoutes } from './routes/resource.routes'
 import { appRoutes } from './routes/app.routes'
-import { appCodeGuard } from './middlewares/appcode-guard.middlware'
 import { authTokenGuard } from './middlewares/auth-token.middleware'
 
 const app: Express = express()
@@ -35,13 +34,13 @@ app.get('/', (_, res) => {
 })
 
 app.use('/v1', appRoutes)
-app.use('/v1/:appCode/auth', appCodeGuard, rateLimiter.auth, authRoutes)
-app.use('/v1/:appCode/users', appCodeGuard, authTokenGuard, userRoutes)
-app.use('/v1/:appCode/profile', appCodeGuard, authTokenGuard, profileRoutes)
-app.use('/v1/:appCode/roles', appCodeGuard, authTokenGuard, roleRoutes)
-app.use('/v1/:appCode/actions', appCodeGuard, authTokenGuard, actionRoutes)
-app.use('/v1/:appCode/groups', appCodeGuard, authTokenGuard, groupRoutes)
-app.use('/v1/:appCode/resources', appCodeGuard, authTokenGuard, resourceRoutes)
+app.use('/v1/:appCode/auth', rateLimiter.auth, authRoutes)
+app.use('/v1/:appCode/users', authTokenGuard, userRoutes)
+app.use('/v1/:appCode/profile', authTokenGuard, profileRoutes)
+app.use('/v1/:appCode/roles', authTokenGuard, roleRoutes)
+app.use('/v1/:appCode/actions', authTokenGuard, actionRoutes)
+app.use('/v1/:appCode/groups', authTokenGuard, groupRoutes)
+app.use('/v1/:appCode/resources', authTokenGuard, resourceRoutes)
 
 app.use(errorHandler)
 

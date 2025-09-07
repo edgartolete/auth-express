@@ -31,27 +31,25 @@ export const userController = {
       conditions.push(eq(users.isActive, true))
     }
 
-    conditions.push(eq(users.appId, req.appId))
+    conditions.push(eq(users.appId, req.user?.appId!))
 
     const whereClause =
-      conditions.length > 0 ? { where: and(...conditions) } : { where: eq(users.appId, req.appId) }
+      conditions.length > 0
+        ? { where: and(...conditions) }
+        : { where: eq(users.appId, req.user?.appId!) }
 
     const result = await db.query.users.findMany({
       ...whereClause,
       with: {
         profile: true
       },
+      extras: {
+        total: db.$count(users).as('total')
+      },
       ...paginateFilter(pageSize, pageNum)
     })
 
-    const totalItems = await db.query.users
-      .findMany({
-        ...whereClause,
-        columns: {
-          id: true
-        }
-      })
-      .then((users) => users.length)
+    const totalItems = result && result.length > 0 ? (result[0] as any).total : 0
 
     const message = result.length ? 'Users fetched successfully' : 'No users found'
 
@@ -65,9 +63,21 @@ export const userController = {
   getUserById: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
 
+    const { activeOnly } = getFilters(req)
+
+    const conditions: (SQL<unknown> | undefined)[] = []
+
+    if (activeOnly) {
+      conditions.push(eq(users.isActive, true))
+    }
+
+    conditions.push(eq(users.id, userId))
+
+    const whereClause = { where: conditions.length > 0 ? and(...conditions) : undefined }
+
     const result = await db.query.users.findFirst({
       columns: { id: true, username: true, email: true, createdAt: true },
-      where: and(eq(users.id, userId), eq(users.isActive, true)),
+      ...whereClause,
       with: {
         profile: true
       }
@@ -80,17 +90,13 @@ export const userController = {
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',
-      data: {
-        ...result,
-        resources,
-        groups
-      }
+      data: result
     })
   },
   createUser: async (req: Request, res: Response) => {
     const searchResult = await db.query.users.findFirst({
       where: and(
-        eq(users.appId, req.appId),
+        eq(users.appId, req.user?.appId!),
         or(eq(users.username, req.body.username), eq(users.email, req.body.email))
       )
     })
@@ -122,10 +128,11 @@ export const userController = {
   },
   updateUser: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
+    const whereClause = eq(users.id, userId)
 
     const searchResult = await db.query.users.findFirst({
       columns: { id: true },
-      where: eq(users.id, userId)
+      where: whereClause
     })
 
     if (!searchResult) {
@@ -144,12 +151,13 @@ export const userController = {
       roleId: storedRoles === 'admin' || storedRoles == 'superadmin' ? req.body.roleId : undefined
     }
 
-    await db.update(users).set(updatedUser).where(eq(users.id, userId))
+    await db.update(users).set(updatedUser).where(whereClause)
 
     return res.status(200).json({ success: true, message: `Updated user with ID ${userId}` })
   },
   deleteUser: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
+    const whereClause = eq(users.id, userId)
 
     const isHardDelete = req.body?.hard
 
@@ -158,7 +166,7 @@ export const userController = {
       with: {
         profile: true
       },
-      where: eq(users.id, userId)
+      where: whereClause
     })
 
     if (!searchResult) {
@@ -169,7 +177,7 @@ export const userController = {
     }
 
     if (!isHardDelete) {
-      await db.update(users).set({ isActive: false }).where(eq(users.id, userId))
+      await db.update(users).set({ isActive: false }).where(whereClause)
       return res.status(200).json({ success: true, message: `Soft deleted user with ID ${userId}` })
     }
 
@@ -188,7 +196,7 @@ export const userController = {
       }
     }
 
-    await db.delete(users).where(eq(users.id, userId))
+    await db.delete(users).where(whereClause)
 
     return res.status(200).json({ success: true, message: `Deleted user with ID ${userId}` })
   },

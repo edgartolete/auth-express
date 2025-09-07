@@ -16,7 +16,12 @@ router.get(
   validateQueryParams(queryFilterDto),
   asyncHandler(roleController.getAllRoles)
 )
-router.get('/:id', rootRoleGuard(['superadmin', 'admin']), asyncHandler(roleController.getRoleById))
+router.get(
+  '/:id',
+  rootRoleGuard(['superadmin', 'admin']),
+  validateQueryParams(queryFilterDto),
+  asyncHandler(roleController.getRoleById)
+)
 
 router.post(
   '/',

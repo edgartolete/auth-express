@@ -21,5 +21,14 @@ export const appController = {
   },
   logout: async (req: Request, res: Response) => {
     res.status(200).json({ success: true })
+  },
+  forgotRequest: async (req: Request, res: Response) => {
+    res.status(200).json({ success: true })
+  },
+  forgotSubmit: async (req: Request, res: Response) => {
+    res.status(200).json({ success: true })
+  },
+  resetPassword: async (req: Request, res: Response) => {
+    res.status(200).json({ success: true })
   }
 }

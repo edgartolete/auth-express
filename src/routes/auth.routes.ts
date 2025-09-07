@@ -11,16 +11,24 @@ import {
 } from '../dto/auth.dto'
 import { authTokenGuard } from '../middlewares/auth-token.middleware'
 import { upload } from '../middlewares/upload.middleware'
+import { appCodePipe } from '../middlewares/appcode-pipe.middlware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 router.post(
   '/register',
   upload.none(),
+  appCodePipe,
   validateBody(RegisterAuthDto),
   asyncHandler(authController.register)
 )
-router.post('/login', upload.none(), validateBody(LoginAuthDto), asyncHandler(authController.login))
+router.post(
+  '/login',
+  upload.none(),
+  appCodePipe,
+  validateBody(LoginAuthDto),
+  asyncHandler(authController.login)
+)
 router.post('/logout', authTokenGuard, asyncHandler(authController.logout))
 router.post('/refresh', asyncHandler(authController.refreshToken))
 router.post(

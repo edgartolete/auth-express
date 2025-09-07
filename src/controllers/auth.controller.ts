@@ -13,6 +13,7 @@ import { addDays, isBefore } from 'date-fns'
 import ms from 'ms'
 import { redisClient } from '../services/cache.service'
 import { userController } from './user.controller'
+import { apps } from '../db/schema/apps.schema'
 
 export const authController = {
   register: async (req: Request, res: Response) => {
@@ -62,7 +63,7 @@ export const authController = {
       return res.status(200).json({ success: true, message: 'Verification code sent' })
     }
 
-    const storedCode = await redisClient.get(`${req.appId}-${username}-${email}`)
+    const storedCode = await redisClient.get(`register:${req.appId}-${username}-${email}`)
 
     if (config.auth.register.emailVerify && !!code && storedCode !== code) {
       return res.status(400).json({ success: false, message: 'Code is invalid or expired' })
@@ -77,9 +78,13 @@ export const authController = {
       password: hashedPassword
     }
 
-    const result = await db.insert(users).values(newUser)
+    const result = await db.insert(users).values(newUser).$returningId()
 
-    const userId = result[0].insertId
+    if (!result || !result.length) {
+      return res.status(500).json({ success: false, message: 'Failed to register user' })
+    }
+
+    const userId = result[0].id
 
     await db.insert(profiles).values({ userId })
 
@@ -88,7 +93,13 @@ export const authController = {
 
       const userAgent = req.headers['user-agent'] || ''
 
-      const payload = { id: userId, username }
+      const search = await db.query.apps.findFirst({ where: eq(apps.code, req.params.appCode) })
+
+      if (!search) {
+        return res.status(400).json({ success: false, message: 'App not found' })
+      }
+
+      const payload = { id: userId, username, appId: search.id }
 
       const accessToken = generateAccessToken(payload)
 
@@ -152,7 +163,8 @@ export const authController = {
 
     const payload = {
       id: searchResult!.id,
-      username: searchResult!.username
+      username: searchResult!.username,
+      appId: searchResult!.appId
     }
 
     //find if user already logged in on same device
@@ -223,7 +235,8 @@ export const authController = {
         message: 'User logged in successfully',
         accessToken,
         groups,
-        resources
+        resources,
+        payload
       })
   },
   logout: async (req: Request, res: Response) => {
@@ -281,13 +294,17 @@ export const authController = {
       })
     }
 
-    const { id, username } = decoded || {}
+    const { id, username, appId } = decoded || {}
 
-    const payload = { id: id!, username: username! }
+    if (!id || !username || !appId) {
+      return res.status(400).json({ success: false, message: 'Token is invalid' })
+    }
+
+    const payload = { id, username, appId }
 
     const accessToken = generateAccessToken(payload)
 
-    const userRole = sessionResult.user.role?.code
+    const userRole = sessionResult.user.role?.code || ''
 
     if (userRole) {
       await redisClient.setex(
