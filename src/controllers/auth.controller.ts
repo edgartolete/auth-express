@@ -211,7 +211,7 @@ export const authController = {
       const ttlSeconds = ms(config.auth.login.accessTokenDuration) / 1000
 
       await redisClient.setex(
-        `root-role:${req.appId}:${searchResult?.id}`,
+        `root-role:${req.params.appCode}:${searchResult?.id}`,
         ttlSeconds,
         searchResult?.role?.code
       )
@@ -250,7 +250,7 @@ export const authController = {
       .set({ isActive: false })
       .where(eq(sessions.refreshToken, refreshToken))
 
-    const roleKey = `user:${sessionResult.userId}:roles`
+    const roleKey = `root-role:${req.params.appCode}:${req.user?.id}`
 
     await redisClient.del(roleKey)
 
@@ -302,7 +302,7 @@ export const authController = {
 
     if (userRole) {
       await redisClient.setex(
-        `root-role:${req.appId}:${sessionResult!.userId}`,
+        `root-role:${req.params.appCode}:${sessionResult!.userId}`,
         config.auth.register.codeExpiry,
         userRole
       )

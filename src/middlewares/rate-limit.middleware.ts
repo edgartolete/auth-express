@@ -1,4 +1,5 @@
 import { rateLimit } from 'express-rate-limit'
+import { config } from '../config'
 
 const message = {
   success: false,
@@ -15,7 +16,7 @@ export const rateLimiter = {
   }),
   auth: rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 15, // allow 15 requests per 10 minutes per IP
+    max: config.isProduction ? 15 : 100, // allow 15 requests per 10 minutes per IP
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message

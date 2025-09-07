@@ -37,3 +37,9 @@ export const AddGroupUserDto = z
     roleId: z.number().int().positive()
   })
   .strict()
+
+export const UpdateGroupUserDto = z
+  .object({
+    roleId: z.number().int().positive()
+  })
+  .strict()

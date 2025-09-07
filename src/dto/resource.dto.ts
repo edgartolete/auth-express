@@ -32,3 +32,23 @@ export const DeleteResourceDto = z
   .optional()
 
 export type DeleteResourceDtoType = z.infer<typeof DeleteResourceDto>
+
+export const AddResourceUserDto = z
+  .object({
+    userId: z.int().positive(),
+    roleId: z.int().positive()
+  })
+  .strict()
+
+export const UpdateResourceUserDto = z
+  .object({
+    roleId: z.int().positive()
+  })
+  .strict()
+
+export const UpdateResourcePermissionDto = z
+  .object({
+    add: z.array(z.number().int().positive()).optional(),
+    remove: z.array(z.number().int().positive()).optional()
+  })
+  .strict()

@@ -4,7 +4,13 @@ import { asyncHandler } from '../utils/handler.util'
 import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
 import { queryFilterDto } from '../dto/filter.dto'
-import { AddGroupUserDto, CreateGroupDto, DeleteGroupDto, UpdateGroupDto } from '../dto/group.dto'
+import {
+  AddGroupUserDto,
+  CreateGroupDto,
+  DeleteGroupDto,
+  UpdateGroupDto,
+  UpdateGroupUserDto
+} from '../dto/group.dto'
 
 const router: Router = express.Router({ mergeParams: true })
 
@@ -68,6 +74,7 @@ router.post(
 router.patch(
   '/:groupId/users/:userId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(UpdateGroupUserDto),
   asyncHandler(groupController.updateGroupUsers)
 )
 

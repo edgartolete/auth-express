@@ -4,7 +4,14 @@ import { asyncHandler } from '../utils/handler.util'
 import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
 import { queryFilterDto } from '../dto/filter.dto'
-import { CreateResourceDto, DeleteResourceDto, UpdateResourceDto } from '../dto/resource.dto'
+import {
+  AddResourceUserDto,
+  CreateResourceDto,
+  DeleteResourceDto,
+  UpdateResourceDto,
+  UpdateResourcePermissionDto,
+  UpdateResourceUserDto
+} from '../dto/resource.dto'
 
 const router: Router = express.Router({ mergeParams: true })
 
@@ -59,12 +66,14 @@ router.get(
 router.post(
   '/:resourceId/users',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(AddResourceUserDto),
   asyncHandler(resourceController.addResourceUsers)
 )
 
 router.patch(
   '/:resourceId/users/:userId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(UpdateResourceUserDto),
   asyncHandler(resourceController.updateResourceUsers)
 )
 
@@ -86,6 +95,7 @@ router.get(
 router.patch(
   '/:resourceId/roles/:roleId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(UpdateResourcePermissionDto),
   asyncHandler(resourceController.updateResourceRoles)
 )
 

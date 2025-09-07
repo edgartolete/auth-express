@@ -218,12 +218,31 @@ export const groupController = {
     })
   },
   addGroupUsers: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    await db.insert(groupRoles).values({ ...req.body, groupId: Number(req.params.groupId) })
+    return res.status(200).json({ success: true, message: 'Users added to group' })
   },
   updateGroupUsers: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    await db
+      .update(groupRoles)
+      .set(req.body)
+      .where(
+        and(
+          eq(groupRoles.groupId, Number(req.params.groupId)),
+          eq(groupRoles.userId, Number(req.params.userId))
+        )
+      )
+
+    return res.status(200).json({ success: true, message: 'Group user updated' })
   },
   removeGroupUsers: async (req: Request, res: Response) => {
+    await db
+      .delete(groupRoles)
+      .where(
+        and(
+          eq(groupRoles.id, Number(req.params.groupRoleId)),
+          eq(groupRoles.groupId, Number(req.params.groupId))
+        )
+      )
     return res.status(200).json({ success: true })
   }
 }

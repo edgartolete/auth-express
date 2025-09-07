@@ -5,6 +5,7 @@ import { and, eq, like, or, SQL, sql } from 'drizzle-orm'
 import { resources } from '../db/schema/resources.schema'
 import { users } from '../db/schema/users.schema'
 import { resourceRoles } from '../db/schema/resourceRoles.schema'
+import { resourceRolePermissions } from '../db/schema/resourceRolePermissions.schema'
 
 export const resourceController = {
   getAllResources: async (req: Request, res: Response) => {
@@ -220,18 +221,70 @@ export const resourceController = {
     })
   },
   addResourceUsers: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    await db
+      .insert(resourceRoles)
+      .values({ ...req.body, resourceId: Number(req.params.resourceId) })
+    return res.status(200).json({ success: true, message: 'User added to resource successfully' })
   },
   updateResourceUsers: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    await db
+      .update(resourceRoles)
+      .set(req.body)
+      .where(
+        and(
+          eq(resourceRoles.resourceId, Number(req.params.resourceId)),
+          eq(resourceRoles.userId, Number(req.params.userId))
+        )
+      )
+    return res.status(200).json({ success: true, message: 'User role updated successfully' })
   },
   removeResourceUsers: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    await db
+      .delete(resourceRoles)
+      .where(
+        and(
+          eq(resourceRoles.resourceId, Number(req.params.resourceId)),
+          eq(resourceRoles.userId, Number(req.params.userId))
+        )
+      )
+    return res
+      .status(200)
+      .json({ success: true, message: 'User removed from resource successfully' })
   },
   getResourceRoles: async (req: Request, res: Response) => {
-    return res.status(200).json({ success: true })
+    const result = await db
+      .select()
+      .from(resourceRoles)
+      .where(eq(resourceRoles.resourceId, Number(req.params.resourceId)))
+    return res.status(200).json({ success: true, message: '', data: result })
   },
   updateResourceRoles: async (req: Request, res: Response) => {
+    const resourceId = Number(req.params.resourceId)
+    const roleId = Number(req.params.roleId)
+
+    const { add = [], remove = [] } = req.body
+
+    if (add && add.length > 0) {
+      const toAdd = add.map((actionId: number) => ({
+        resourceId,
+        roleId,
+        actionId
+      }))
+
+      await db.insert(resourceRolePermissions).values(toAdd)
+    }
+
+    if (remove && remove.length > 0) {
+      const toRemove = remove.map((i: number) =>
+        and(
+          eq(resourceRolePermissions.roleId, roleId),
+          eq(resourceRolePermissions.actionId, i),
+          eq(resourceRolePermissions.resourceId, resourceId)
+        )
+      )
+      await db.delete(resourceRolePermissions).where(or(...toRemove))
+    }
+
     return res.status(200).json({ success: true })
   }
 }
