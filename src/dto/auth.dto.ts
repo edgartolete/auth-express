@@ -18,7 +18,8 @@ export const LoginAuthDto = z
     username: z.string().min(1, { message: 'Username is required' }).max(50).optional(),
     email: z.email({ message: 'Invalid email format' }).max(100).optional(),
     password: z.string().min(6, { message: 'Password must be at least 6 characters' }).max(255),
-    rememberMe: z.boolean().optional()
+    rememberMe: z.boolean().optional(),
+    code: z.string().optional()
   })
   .refine((data) => data.username || data.email, {
     message: 'Either username or email is required',

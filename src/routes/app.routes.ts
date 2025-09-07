@@ -13,12 +13,13 @@ import {
   LoginAuthDto,
   ResetPasswordAuthDto
 } from '../dto/auth.dto'
+import { superUserGuard } from '../middlewares/sp-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  authTokenGuard,
+  superUserGuard,
   rootRoleGuard(['superadmin']),
   validateQueryParams(queryFilterDto),
   asyncHandler(appController.getAllApps)
@@ -26,7 +27,7 @@ router.get(
 
 router.get(
   '/:appCode',
-  authTokenGuard,
+  superUserGuard,
   rootRoleGuard(['superadmin']),
   validateQueryParams(queryFilterDto),
   asyncHandler(appController.getAppById)
@@ -34,7 +35,7 @@ router.get(
 
 router.post(
   '/',
-  authTokenGuard,
+  superUserGuard,
   rootRoleGuard(['superadmin']),
   validateBody(CreateAppDto),
   asyncHandler(appController.createApp)
@@ -42,7 +43,7 @@ router.post(
 
 router.patch(
   '/:appCode',
-  authTokenGuard,
+  superUserGuard,
   rootRoleGuard(['superadmin']),
   validateBody(UpdateAppDto),
   asyncHandler(appController.updateApp)
@@ -50,7 +51,7 @@ router.patch(
 
 router.delete(
   '/:appCode',
-  authTokenGuard,
+  superUserGuard,
   rootRoleGuard(['superadmin']),
   validateBody(DeleteAppDto),
   asyncHandler(appController.deleteApp)
@@ -59,27 +60,5 @@ router.delete(
 router.post('/login', upload.none(), validateBody(LoginAuthDto), asyncHandler(appController.login))
 
 router.post('/logout', upload.none(), asyncHandler(appController.logout))
-
-router.post(
-  '/forgot-request',
-  upload.none(),
-  validateBody(ForgotRequestAuthDto),
-  asyncHandler(appController.forgotRequest)
-)
-
-router.post(
-  '/forgot-submit',
-  upload.none(),
-  validateBody(ForgotSubmitAuthDto),
-  asyncHandler(appController.forgotSubmit)
-)
-
-router.post(
-  '/reset-password',
-  upload.none(),
-  authTokenGuard,
-  validateBody(ResetPasswordAuthDto),
-  asyncHandler(appController.resetPassword)
-)
 
 export { router as appRoutes }

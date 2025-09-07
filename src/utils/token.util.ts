@@ -32,3 +32,10 @@ export function validateToken(token: string): { expired: boolean; decoded?: MyJw
     return { expired: true }
   }
 }
+
+export function generateSuperAccessToken() {
+  const secretKey: Secret = `${process.env.TOKEN_SECRET_KEY}`
+  return jwt.sign({ username: 'superadmin' }, secretKey, {
+    expiresIn: config.auth.login.accessTokenDuration
+  })
+}

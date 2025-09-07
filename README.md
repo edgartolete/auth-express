@@ -8,6 +8,10 @@ NODE_ENV - status of the environment
 
 ALLOWED_DOMAINS - list of only allowed domains on the production environment separated by comma
 
+SUPER_ADMIN_USER - username of Super Administrator
+SUPER_ADMIN_EMAIL - email of Super Administrator
+SUPER_ADMIN_PASS - password of Super Administrator
+
 DB_HOST - database's host
 DB_PORT - database's port
 DB_NAME - database's name

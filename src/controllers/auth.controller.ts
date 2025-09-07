@@ -235,8 +235,7 @@ export const authController = {
         message: 'User logged in successfully',
         accessToken,
         groups,
-        resources,
-        payload
+        resources
       })
   },
   logout: async (req: Request, res: Response) => {
