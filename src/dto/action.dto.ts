@@ -3,6 +3,7 @@ import { z } from 'zod'
 // ✅ CREATE
 export const CreateActionDto = z
   .object({
+    appId: z.int().positive().optional(),
     code: z.string().min(1, { message: 'Code is required' }).max(10),
     description: z.string().optional()
   })

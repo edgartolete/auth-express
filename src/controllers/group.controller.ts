@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { db } from '../db'
-import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
+import { extractAppId, getFilters, getPagination, paginateFilter } from '../utils/request.util'
 import { and, eq, like, or, SQL } from 'drizzle-orm'
 import { groups } from '../db/schema/groups.schema'
 import { users } from '../db/schema/users.schema'
@@ -9,6 +9,14 @@ import { groupRoles } from '../db/schema/groupRoles.schema'
 export const groupController = {
   getAllGroups: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -22,7 +30,7 @@ export const groupController = {
       conditions.push(eq(groups.isActive, true))
     }
 
-    conditions.push(eq(groups.appId, req.user?.appId!))
+    conditions.push(eq(groups.appId, appId))
 
     const result = await db.query.groups.findMany({
       where: and(...conditions),
@@ -44,6 +52,14 @@ export const groupController = {
     })
   },
   getGroupById: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const groupId = Number(req.params.groupId)
 
     const { activeOnly } = getFilters(req)
@@ -54,7 +70,7 @@ export const groupController = {
       conditions.push(eq(groups.isActive, true))
     }
 
-    conditions.push(eq(groups.appId, req.user?.appId!))
+    conditions.push(eq(groups.appId, appId))
 
     conditions.push(eq(groups.id, groupId))
 
@@ -73,8 +89,16 @@ export const groupController = {
     })
   },
   createGroup: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const searchResult = await db.query.groups.findFirst({
-      where: and(eq(groups.appId, req.user?.appId!), eq(groups.name, req.body.name))
+      where: and(eq(groups.appId, appId), eq(groups.name, req.body.name))
     })
 
     if (searchResult) {
@@ -85,8 +109,8 @@ export const groupController = {
     }
 
     const newGroup = {
-      appId: req.user?.appId,
-      ...req.body
+      ...req.body,
+      appId
     }
 
     const result = await db.insert(groups).values(newGroup).$returningId()
@@ -192,5 +216,14 @@ export const groupController = {
       data,
       pagination: getPagination(totalItems, pageNum, pageSize)
     })
+  },
+  addGroupUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  updateGroupUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  removeGroupUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
   }
 }

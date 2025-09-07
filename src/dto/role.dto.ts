@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const CreateRoleDto = z
   .object({
+    appId: z.int().positive().optional(),
     name: z.string().min(1, { message: 'Role name is required' }).max(50),
     roleId: z.number().int().positive().optional(),
     isActive: z.boolean().optional()

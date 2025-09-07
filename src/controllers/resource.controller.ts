@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { db } from '../db'
-import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
+import { extractAppId, getFilters, getPagination, paginateFilter } from '../utils/request.util'
 import { and, eq, like, or, SQL, sql } from 'drizzle-orm'
 import { resources } from '../db/schema/resources.schema'
 import { users } from '../db/schema/users.schema'
@@ -10,6 +10,14 @@ import { Pool } from 'mysql2/typings/mysql/lib/Pool'
 export const resourceController = {
   getAllResources: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -23,7 +31,7 @@ export const resourceController = {
       conditions.push(eq(resources.isActive, true))
     }
 
-    conditions.push(eq(resources.appId, req.user?.appId!))
+    conditions.push(eq(resources.appId, appId))
 
     const result = await db.query.resources.findMany({
       where: and(...conditions),
@@ -47,6 +55,14 @@ export const resourceController = {
   getResourceById: async (req: Request, res: Response) => {
     const resourceId = Number(req.params.resourceId)
 
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const { activeOnly } = getFilters(req)
 
     const conditions: (SQL<unknown> | undefined)[] = []
@@ -55,7 +71,7 @@ export const resourceController = {
       conditions.push(eq(resources.isActive, true))
     }
 
-    conditions.push(eq(resources.appId, req.user?.appId!))
+    conditions.push(eq(resources.appId, appId))
 
     conditions.push(eq(resources.id, resourceId))
 
@@ -74,8 +90,16 @@ export const resourceController = {
     })
   },
   createResource: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const searchResult = await db.query.resources.findFirst({
-      where: and(eq(resources.appId, req.user?.appId!), eq(resources.name, req.body.name))
+      where: and(eq(resources.appId, appId), eq(resources.name, req.body.name))
     })
 
     if (searchResult) {
@@ -86,8 +110,8 @@ export const resourceController = {
     }
 
     const newResource = {
-      appId: req.user?.appId,
-      ...req.body
+      ...req.body,
+      appId
     }
 
     const result = await db.insert(resources).values(newResource).$returningId()
@@ -195,5 +219,20 @@ export const resourceController = {
       data,
       pagination: getPagination(totalItems, pageNum, pageSize)
     })
+  },
+  addResourceUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  updateResourceUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  removeResourceUsers: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  getResourceRoles: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
+  },
+  updateResourceRoles: async (req: Request, res: Response) => {
+    return res.status(200).json({ success: true })
   }
 }

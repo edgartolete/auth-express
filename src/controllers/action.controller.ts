@@ -1,12 +1,20 @@
 import { Request, Response } from 'express'
 import { db } from '../db'
-import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
+import { extractAppId, getFilters, getPagination, paginateFilter } from '../utils/request.util'
 import { and, eq, like, SQL } from 'drizzle-orm'
 import { actions } from '../db/schema/actions.schema'
 
 export const actionController = {
   getAllActions: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -18,7 +26,7 @@ export const actionController = {
       conditions.push(eq(actions.isActive, true))
     }
 
-    conditions.push(eq(actions.appId, req.user?.appId!))
+    conditions.push(eq(actions.appId, appId))
 
     const result = await db.query.actions.findMany({
       where: and(...conditions),
@@ -42,6 +50,14 @@ export const actionController = {
   getActionById: async (req: Request, res: Response) => {
     const actionId = Number(req.params.actionId)
 
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const { activeOnly } = getFilters(req)
 
     const conditions: (SQL<unknown> | undefined)[] = []
@@ -50,7 +66,7 @@ export const actionController = {
       conditions.push(eq(actions.isActive, true))
     }
 
-    conditions.push(eq(actions.appId, req.user?.appId!))
+    conditions.push(eq(actions.appId, appId))
 
     conditions.push(eq(actions.id, actionId))
 
@@ -69,8 +85,21 @@ export const actionController = {
     })
   },
   createAction: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
     const searchResult = await db.query.actions.findFirst({
-      where: and(eq(actions.appId, req.user?.appId!), eq(actions.code, req.body.code))
+      where: and(eq(actions.appId, appId), eq(actions.code, req.body.code))
     })
 
     if (searchResult) {
@@ -81,8 +110,8 @@ export const actionController = {
     }
 
     const newAction = {
-      appId: req.user?.appId,
-      ...req.body
+      ...req.body,
+      appId
     }
 
     const result = await db.insert(actions).values(newAction).$returningId()

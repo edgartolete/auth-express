@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
+import { extractAppId, getFilters, getPagination, paginateFilter } from '../utils/request.util'
 import { and, eq, like, SQL } from 'drizzle-orm'
 import { roles } from '../db/schema/roles.schema'
 import { db } from '../db'
@@ -7,6 +7,14 @@ import { db } from '../db'
 export const roleController = {
   getAllRoles: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -18,7 +26,7 @@ export const roleController = {
       conditions.push(eq(roles.isActive, true))
     }
 
-    conditions.push(eq(roles.appId, req.appId))
+    conditions.push(eq(roles.appId, appId))
 
     const whereClause = { where: conditions.length > 0 ? and(...conditions) : undefined }
 
@@ -42,6 +50,14 @@ export const roleController = {
     })
   },
   getRoleById: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const roleId = Number(req.params.id)
 
     const { activeOnly } = getFilters(req)
@@ -51,6 +67,8 @@ export const roleController = {
     if (activeOnly) {
       conditions.push(eq(roles.isActive, true))
     }
+
+    conditions.push(eq(roles.appId, appId))
 
     conditions.push(eq(roles.id, roleId))
 
@@ -65,7 +83,14 @@ export const roleController = {
     res.status(200).json({ success: true, message, data: result })
   },
   createRole: async (req: Request, res: Response) => {
-    const appId = req.user?.appId!
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const searchResult = await db.query.roles.findFirst({
       where: and(eq(roles.appId, appId), eq(roles.name, req.body.name))
     })
@@ -78,8 +103,8 @@ export const roleController = {
     }
 
     const newRole = {
-      appId,
-      ...req.body
+      ...req.body,
+      appId
     }
 
     const result = await db.insert(roles).values(newRole)

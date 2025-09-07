@@ -3,6 +3,7 @@ import { z } from 'zod'
 // ✅ CREATE
 export const CreateResourceDto = z
   .object({
+    appId: z.int().positive().optional(),
     groupId: z.number().int().positive().optional(),
     name: z.string().min(1, { message: 'Name is required' }).max(50),
     description: z.string().optional()

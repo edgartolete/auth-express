@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const CreateUserDto = z
   .object({
+    appId: z.int().positive().optional(),
     username: z.string().min(1, { message: 'Username is required' }).max(50),
     email: z.email({ message: 'Invalid email format' }).max(100),
     password: z.string().min(6, { message: 'Password must be at least 6 characters' }).max(255),

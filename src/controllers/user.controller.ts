@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { db } from '../db'
 import { and, eq, like, or, SQL } from 'drizzle-orm'
 import { users } from '../db/schema/users.schema'
-import { getFilters, getPagination, paginateFilter } from '../utils/request.util'
+import { extractAppId, getFilters, getPagination, paginateFilter } from '../utils/request.util'
 import { profiles } from '../db/schema/profiles.schema'
 import * as bcrypt from 'bcrypt'
 import { deleteSingleFile } from '../services/storage.service'
@@ -20,6 +20,13 @@ import { redisClient } from '../services/cache.service'
 export const userController = {
   getAllUsers: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
 
     const conditions: (SQL<unknown> | undefined)[] = []
 
@@ -31,7 +38,7 @@ export const userController = {
       conditions.push(eq(users.isActive, true))
     }
 
-    conditions.push(eq(users.appId, req.user?.appId!))
+    conditions.push(eq(users.appId, appId))
 
     const result = await db.query.users.findMany({
       where: and(...conditions),
@@ -60,13 +67,21 @@ export const userController = {
 
     const { activeOnly } = getFilters(req)
 
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const conditions: (SQL<unknown> | undefined)[] = []
 
     if (activeOnly) {
       conditions.push(eq(users.isActive, true))
     }
 
-    conditions.push(eq(users.appId, req.user?.appId!))
+    conditions.push(eq(users.appId, appId))
 
     conditions.push(eq(users.id, userId))
 
@@ -89,7 +104,13 @@ export const userController = {
     })
   },
   createUser: async (req: Request, res: Response) => {
-    const appId = req.user?.appId!
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
     const searchResult = await db.query.users.findFirst({
       where: and(
         eq(users.appId, appId),
@@ -107,8 +128,8 @@ export const userController = {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10)
 
     const newUser = {
-      appId,
       ...req.body,
+      appId,
       password: hashedPassword
     }
 
@@ -123,8 +144,16 @@ export const userController = {
       .json({ success: true, message: 'User created successfully', data: result })
   },
   updateUser: async (req: Request, res: Response) => {
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const userId = Number(req.params.id)
-    const appId = req.user?.appId!
+
     const whereClause = and(eq(users.id, userId), eq(users.appId, appId))
 
     const searchResult = await db.query.users.findFirst({
@@ -154,7 +183,14 @@ export const userController = {
   },
   deleteUser: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
-    const appId = req.user?.appId!
+    const appId = await extractAppId(req)
+
+    if (!appId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'App ID is required to create action' })
+    }
+
     const whereClause = and(eq(users.id, userId), eq(users.appId, appId))
 
     const isHardDelete = req.body?.hard
