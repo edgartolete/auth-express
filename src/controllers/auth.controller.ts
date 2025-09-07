@@ -12,9 +12,14 @@ import { sessions } from '../db/schema/sessions.schema'
 import { addDays, isBefore } from 'date-fns'
 import ms from 'ms'
 import { redisClient } from '../services/cache.service'
+import { userController } from './user.controller'
 
 export const authController = {
   register: async (req: Request, res: Response) => {
+    if (!config.auth.register.enabled) {
+      return res.status(403).json({ success: false, message: 'Registration is disabled' })
+    }
+
     const { username, email, password, code, autoLogin } = req.body
 
     const searchResult = await db.query.users.findFirst({
@@ -43,7 +48,7 @@ export const authController = {
       }
 
       await redisClient.setex(
-        `${req.appId}-${username}-${email}`,
+        `register:${req.appId}-${username}-${email}`,
         config.auth.register.codeExpiry,
         generatedCode
       )
@@ -125,7 +130,10 @@ export const authController = {
     const userAgent = req.headers['user-agent'] || ''
 
     const searchResult = await db.query.users.findFirst({
-      with: { profile: true },
+      with: {
+        profile: true,
+        role: true
+      },
       where: and(
         eq(users.appId, req.appId),
         or(eq(users.username, username), eq(users.email, email))
@@ -190,6 +198,18 @@ export const authController = {
       await db.insert(sessions).values(newSession)
     }
 
+    const { groups, resources } = await userController.queryRoles(searchResult!.id)
+
+    if (searchResult?.role?.code) {
+      const ttlSeconds = ms(config.auth.login.accessTokenDuration) / 1000
+
+      await redisClient.setex(
+        `root-role:${req.appId}:${searchResult?.id}`,
+        ttlSeconds,
+        searchResult?.role?.code
+      )
+    }
+
     return res
       .cookie('refreshToken', refreshToken, {
         httpOnly: config.isProduction,
@@ -198,7 +218,13 @@ export const authController = {
         maxAge: refreshExpiryMilliseconds
       })
       .status(200)
-      .json({ success: true, message: 'User logged in successfully', accessToken })
+      .json({
+        success: true,
+        message: 'User logged in successfully',
+        accessToken,
+        groups,
+        resources
+      })
   },
   logout: async (req: Request, res: Response) => {
     const refreshToken = req.cookies.refreshToken
@@ -217,6 +243,10 @@ export const authController = {
       .set({ isActive: false })
       .where(eq(sessions.refreshToken, refreshToken))
 
+    const roleKey = `user:${sessionResult.userId}:roles`
+
+    await redisClient.del(roleKey)
+
     res
       .clearCookie('refreshToken', { path: '/' })
       .status(200)
@@ -227,7 +257,7 @@ export const authController = {
 
     const sessionResult = await db.query.sessions.findFirst({
       where: eq(sessions.refreshToken, refreshToken),
-      with: { user: true }
+      with: { user: { with: { role: true } } }
     })
 
     const { expired, decoded } = validateToken(refreshToken)
@@ -251,11 +281,21 @@ export const authController = {
       })
     }
 
-    const { id, username, role, profileId } = decoded || {}
+    const { id, username } = decoded || {}
 
-    const payload = { id: id!, username: username!, role, profileId: profileId! }
+    const payload = { id: id!, username: username! }
 
     const accessToken = generateAccessToken(payload)
+
+    const userRole = sessionResult.user.role?.code
+
+    if (userRole) {
+      await redisClient.setex(
+        `root-role:${req.appId}:${sessionResult!.userId}`,
+        config.auth.register.codeExpiry,
+        userRole
+      )
+    }
 
     return res
       .status(200)

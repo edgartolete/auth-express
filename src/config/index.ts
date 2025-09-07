@@ -6,7 +6,7 @@ export const config: Config = {
   isProduction: process.env.NODE_ENV === 'production',
   auth: {
     register: {
-      enabled: true,
+      enabled: process.env.AUTH_REGISTER_ENABLED === 'true',
       emailVerify: true,
       codeGeneration: 'numbers',
       codeExpiry: 60 * 5 // 5 minutes

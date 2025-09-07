@@ -12,7 +12,6 @@ import * as resourceSchema from './schema/resources.schema'
 import * as groupRoleSchema from './schema/groupRoles.schema'
 import * as resourceRoleSchema from './schema/resourceRoles.schema'
 import * as resourceRolePermissionschema from './schema/resourceRolePermissions.schema'
-import * as userRolesSchema from './schema/userRoles.schema'
 
 dotenv.config({ quiet: true })
 
@@ -36,7 +35,6 @@ export const db = drizzle(poolConnection, {
     ...groupRoleSchema,
     ...resourceRoleSchema,
     ...resourceRolePermissionschema,
-    ...userRolesSchema,
     ...roleSchema
   },
   mode: 'default'

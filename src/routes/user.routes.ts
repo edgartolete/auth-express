@@ -5,22 +5,26 @@ import { queryFilterDto } from '../dto/filter.dto'
 import { CreateUserDto, DeleteUserDto, UpdateUserDto } from '../dto/user.dto'
 import { asyncHandler } from '../utils/handler.util'
 import { upload } from '../middlewares/upload.middleware'
-import { authTokenGuard } from '../middlewares/auth-token.middleware'
+import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  authTokenGuard,
+  rootRoleGuard(['superadmin', 'admin']),
   validateQueryParams(queryFilterDto),
   asyncHandler(userController.getAllUsers)
 )
 
-router.get('/:id', authTokenGuard, asyncHandler(userController.getUserById))
+router.get(
+  '/:id',
+  rootRoleGuard(['superadmin', 'admin', 'self']),
+  asyncHandler(userController.getUserById)
+)
 
 router.post(
   '/',
-  authTokenGuard,
+  rootRoleGuard(['superadmin', 'admin', 'self']),
   upload.none(),
   validateBody(CreateUserDto),
   asyncHandler(userController.createUser)
@@ -28,7 +32,7 @@ router.post(
 
 router.patch(
   '/:id',
-  authTokenGuard,
+  rootRoleGuard(['superadmin', 'admin', 'self']),
   upload.none(),
   validateBody(UpdateUserDto),
   asyncHandler(userController.updateUser)
@@ -36,10 +40,16 @@ router.patch(
 
 router.delete(
   '/:id',
-  authTokenGuard,
+  rootRoleGuard(['superadmin', 'admin', 'self']),
   upload.none(),
   validateBody(DeleteUserDto),
   asyncHandler(userController.deleteUser)
+)
+
+router.get(
+  '/:id/roles',
+  rootRoleGuard(['superadmin', 'admin', 'self']),
+  asyncHandler(userController.getRoles)
 )
 
 export { router as userRoutes }

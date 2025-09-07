@@ -1,17 +1,38 @@
 import express, { Router } from 'express'
 import { actionController } from '../controllers/action.controller'
 import { asyncHandler } from '../utils/handler.util'
+import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
-router.get('/', asyncHandler(actionController.getAllActions))
+router.get(
+  '/',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(actionController.getAllActions)
+)
 
-router.get('/:id', asyncHandler(actionController.getActionById))
+router.get(
+  '/:id',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(actionController.getActionById)
+)
 
-router.post('/', asyncHandler(actionController.createAction))
+router.post(
+  '/',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(actionController.createAction)
+)
 
-router.patch('/:id', asyncHandler(actionController.updateAction))
+router.patch(
+  '/:id',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(actionController.updateAction)
+)
 
-router.delete('/:id', asyncHandler(actionController.deleteAction))
+router.delete(
+  '/:id',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(actionController.deleteAction)
+)
 
 export { router as actionRoutes }

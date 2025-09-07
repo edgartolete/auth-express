@@ -15,6 +15,7 @@ import { resourceRolePermissions } from '../db/schema/resourceRolePermissions.sc
 import { groups } from '../db/schema/groups.schema'
 import { groupRoles } from '../db/schema/groupRoles.schema'
 import { actions } from '../db/schema/actions.schema'
+import { redisClient } from '../services/cache.service'
 
 export const userController = {
   getAllUsers: async (req: Request, res: Response) => {
@@ -76,109 +77,13 @@ export const userController = {
       return res.status(400).json({ success: false, message: 'User not found' })
     }
 
-    const groupRole = alias(roles, 'groupRole')
-    const resourceRole = alias(roles, 'resourceRole')
-
-    const rowsResources = await db
-      .select({
-        resourceRoles,
-        resources,
-        resourceRolePermissions,
-        groups,
-        groupRoles,
-        actions,
-        resourceRole
-      })
-      .from(resourceRoles)
-      .where(eq(resourceRoles.userId, result.id!))
-      .leftJoin(resources, eq(resourceRoles.resourceId, resources.id))
-      .leftJoin(resourceRolePermissions, eq(resources.id, resourceRolePermissions.resourceId))
-      .leftJoin(groups, eq(groups.id, resources.groupId))
-      .leftJoin(groupRoles, eq(groupRoles.groupId, groups.id))
-      .leftJoin(resourceRole, eq(resourceRoles.roleId, resourceRole.id))
-      .leftJoin(
-        actions,
-        and(
-          eq(actions.id, resourceRolePermissions.actionId),
-          eq(resourceRole.id, resourceRolePermissions.roleId)
-        )
-      )
-
-    const nestedResources = Object.values(
-      rowsResources.reduce(
-        (acc, row) => {
-          const rr = row.resourceRoles
-          const res = row.resources
-          const perm = row.resourceRolePermissions
-          const gp = row.groups
-          const act = row.actions
-          const rrl = row.resourceRole
-
-          if (res && rr && !acc[rr!.id]) {
-            acc[rr!.id] = {
-              id: res.id,
-              name: res.name,
-              resourceRole: rrl ? { id: rrl.id, code: rrl.code, name: rrl.name } : null,
-              group: gp ? { id: gp.id, name: gp.name } : null,
-              resourceRolePermissions: []
-            }
-          }
-
-          if (perm && act) {
-            acc[rr!.id].resourceRolePermissions.push(act.code)
-          }
-
-          return acc
-        },
-        {} as Record<number, any>
-      )
-    )
-
-    const rowsGroups = await db
-      .select({
-        groupRoles,
-        groups,
-        groupRole
-      })
-      .from(groupRoles)
-      .where(eq(groupRoles.userId, result.id!))
-      .leftJoin(groups, eq(groups.id, groupRoles.groupId))
-      .leftJoin(groupRole, eq(groupRole.id, groupRoles.roleId))
-
-    const nestedGroups = Object.values(
-      rowsGroups.reduce(
-        (acc, row) => {
-          const gls = row.groupRoles
-          const gp = row.groups
-          const gr = row.groupRole
-
-          if (gls && gp && !acc[gls!.id]) {
-            acc[gls!.id] = {
-              id: gp.id,
-              name: gp.name,
-              role: gr
-                ? {
-                    id: gr?.id,
-                    code: gr?.code,
-                    name: gr?.name
-                  }
-                : null
-            }
-          }
-
-          return acc
-        },
-        {} as Record<number, any>
-      )
-    )
-
     res.status(200).json({
       success: true,
       message: 'User fetched successfully',
       data: {
         ...result,
-        resources: nestedResources,
-        groups: nestedGroups
+        resources,
+        groups
       }
     })
   },
@@ -230,7 +135,16 @@ export const userController = {
       })
     }
 
-    await db.update(users).set(req.body).where(eq(users.id, userId))
+    const roleKey = `root-role:${req.appId}:${userId}`
+
+    const storedRoles = await redisClient.get(roleKey)
+
+    const updatedUser = {
+      ...req.body,
+      roleId: storedRoles === 'admin' || storedRoles == 'superadmin' ? req.body.roleId : undefined
+    }
+
+    await db.update(users).set(updatedUser).where(eq(users.id, userId))
 
     return res.status(200).json({ success: true, message: `Updated user with ID ${userId}` })
   },
@@ -278,5 +192,109 @@ export const userController = {
 
     return res.status(200).json({ success: true, message: `Deleted user with ID ${userId}` })
   },
-  getRoles: async (req: Request, res: Response) => {}
+  getRoles: async (req: Request, res: Response) => {
+    const { groups, resources } = await userController.queryRoles(Number(req.params.id))
+    return res
+      .status(200)
+      .json({ success: true, message: 'Roles fetched successfully', data: { groups, resources } })
+  },
+  queryRoles: async (userId: number) => {
+    const groupRole = alias(roles, 'groupRole')
+    const resourceRole = alias(roles, 'resourceRole')
+
+    const rowsResources = await db
+      .select({
+        resourceRoles,
+        resources,
+        resourceRolePermissions,
+        groups,
+        groupRoles,
+        actions,
+        resourceRole
+      })
+      .from(resourceRoles)
+      .where(eq(resourceRoles.userId, userId))
+      .leftJoin(resources, eq(resourceRoles.resourceId, resources.id))
+      .leftJoin(resourceRolePermissions, eq(resources.id, resourceRolePermissions.resourceId))
+      .leftJoin(groups, eq(groups.id, resources.groupId))
+      .leftJoin(groupRoles, eq(groupRoles.groupId, groups.id))
+      .leftJoin(resourceRole, eq(resourceRoles.roleId, resourceRole.id))
+      .leftJoin(
+        actions,
+        and(
+          eq(actions.id, resourceRolePermissions.actionId),
+          eq(resourceRole.id, resourceRolePermissions.roleId)
+        )
+      )
+
+    const nestedResources = Object.values(
+      rowsResources.reduce(
+        (acc, row) => {
+          const rr = row.resourceRoles
+          const res = row.resources
+          const perm = row.resourceRolePermissions
+          const gp = row.groups
+          const act = row.actions
+          const rrl = row.resourceRole
+
+          if (res && rr && !acc[rr!.id]) {
+            acc[rr!.id] = {
+              id: res.id,
+              name: res.name,
+              resourceRole: rrl ? { id: rrl.id, code: rrl.code, name: rrl.name } : null,
+              group: gp ? { id: gp.id, name: gp.name } : null,
+              resourceRolePermissions: []
+            }
+          }
+
+          if (perm && act) {
+            acc[rr!.id].resourceRolePermissions.push(act.code)
+          }
+
+          return acc
+        },
+        {} as Record<number, any>
+      )
+    )
+
+    const rowsGroups = await db
+      .select({
+        groupRoles,
+        groups,
+        groupRole
+      })
+      .from(groupRoles)
+      .where(eq(groupRoles.userId, userId))
+      .leftJoin(groups, eq(groups.id, groupRoles.groupId))
+      .leftJoin(groupRole, eq(groupRole.id, groupRoles.roleId))
+
+    const nestedGroups = Object.values(
+      rowsGroups.reduce(
+        (acc, row) => {
+          const gls = row.groupRoles
+          const gp = row.groups
+          const gr = row.groupRole
+
+          if (gls && gp && !acc[gls!.id]) {
+            acc[gls!.id] = {
+              id: gp.id,
+              name: gp.name,
+              role: gr
+                ? {
+                    id: gr?.id,
+                    code: gr?.code,
+                    name: gr?.name
+                  }
+                : null
+            }
+          }
+
+          return acc
+        },
+        {} as Record<number, any>
+      )
+    )
+
+    return { resources: nestedResources, groups: nestedGroups }
+  }
 }

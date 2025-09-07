@@ -1,56 +1,56 @@
 import express, { Router } from 'express'
 import { resourceController } from '../controllers/resource.controller'
 import { asyncHandler } from '../utils/handler.util'
-import { rootRoleGuard } from '../middlewares/role-guard.middleware'
+import { roleGuard } from '../middlewares/role-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 // get all resources
 router.get(
   '/',
-  rootRoleGuard(['superadmin', 'admin']),
+  roleGuard(['admin']),
   asyncHandler(resourceController.getAllResources)
 )
 
 // get single resource
 router.get(
-  '/:resourceId',
-  rootRoleGuard(['superadmin', 'admin']),
+  '/:id',
+  roleGuard(['admin']),
   asyncHandler(resourceController.getResourceById)
 )
 
 // create resource
 router.post(
   '/',
-  rootRoleGuard(['superadmin', 'admin']),
+  roleGuard(['admin']),
   asyncHandler(resourceController.createResource)
 )
 
 // update resource
 router.patch(
-  '/:resourceId',
-  rootRoleGuard(['superadmin', 'admin']),
+  '/:id',
+  roleGuard(['admin']),
   asyncHandler(resourceController.updateResource)
 )
 
 // delete resource
 router.delete(
-  '/:resourceId',
-  rootRoleGuard(['superadmin', 'admin']),
+  '/:id',
+  roleGuard(['admin']),
   asyncHandler(resourceController.deleteResource)
 )
 
 // get users from resource
 router.get(
-  '/:resourceId/users',
-  rootRoleGuard(['superadmin', 'admin']),
+  '/:id/users',
+  roleGuard(['admin', 'moderator']),
   asyncHandler(resourceController.getResourceUsers)
 )
 
 // add or remove user(s) to a resource
 router.patch(
-  '/:resourceId/users',
-  rootRoleGuard(['superadmin', 'admin']),
+  '/:id/users',
+  roleGuard(['admin', 'moderator']),
   asyncHandler(resourceController.updateResourceUsers)
 )
 

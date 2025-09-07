@@ -6,10 +6,11 @@ export async function rolesSeed() {
   await db
     .insert(roles)
     .values([
-      { id: 1, appId: 1, code: 'admin', name: 'Administrator', isActive: true },
-      { id: 2, appId: 1, code: 'mod', name: 'Moderator', isActive: true },
-      { id: 3, appId: 1, code: 'normal', name: 'Normal User', isActive: true },
-      { id: 4, appId: 1, code: 'guest', name: 'Guest', isActive: true }
+      { id: 1, appId: 1, code: 'superadmin', name: 'Super Administrator' },
+      { id: 2, appId: 1, code: 'admin', name: 'Administrator' },
+      { id: 3, appId: 1, code: 'moderator', name: 'Moderator' },
+      { id: 4, appId: 1, code: 'normal', name: 'Normal User' },
+      { id: 5, appId: 1, code: 'guest', name: 'Guest' }
     ])
     .onDuplicateKeyUpdate({ set: { id: sql`id` } }) // keep existing record
 

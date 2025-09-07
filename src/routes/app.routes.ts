@@ -2,18 +2,48 @@ import express, { Router } from 'express'
 import { appController } from '../controllers/app.controller'
 import { appCodeGuard } from '../middlewares/appcode-guard.middlware'
 import { asyncHandler } from '../utils/handler.util'
+import { authTokenGuard } from '../middlewares/auth-token.middleware'
+import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
-router.get('/', asyncHandler(appController.getAllApps))
+router.get(
+  '/',
+  authTokenGuard,
+  rootRoleGuard(['superadmin']),
+  asyncHandler(appController.getAllApps)
+)
 
-router.get('/:appCode', appCodeGuard, asyncHandler(appController.getAppById))
+router.get(
+  '/:appCode',
+  authTokenGuard,
+  rootRoleGuard(['superadmin']),
+  appCodeGuard,
+  asyncHandler(appController.getAppById)
+)
 
-router.post('/', asyncHandler(appController.createApp))
+router.post(
+  '/',
+  authTokenGuard,
+  rootRoleGuard(['superadmin']),
+  asyncHandler(appController.createApp)
+)
 
-router.patch('/:appCode', appCodeGuard, asyncHandler(appController.updateApp))
+router.patch(
+  '/:appCode',
+  authTokenGuard,
+  rootRoleGuard(['superadmin']),
+  appCodeGuard,
+  asyncHandler(appController.updateApp)
+)
 
-router.delete('/:appCode', appCodeGuard, asyncHandler(appController.deleteApp))
+router.delete(
+  '/:appCode',
+  authTokenGuard,
+  rootRoleGuard(['superadmin']),
+  appCodeGuard,
+  asyncHandler(appController.deleteApp)
+)
 
 router.post('/login', asyncHandler(appController.login))
 

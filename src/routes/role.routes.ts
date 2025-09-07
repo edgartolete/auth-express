@@ -5,36 +5,37 @@ import { validateBody, validateQueryParams } from '../middlewares/validator.midd
 import { queryFilterDto } from '../dto/filter.dto'
 import { CreateRoleDto, DeleteRoleDto, UpdateRoleDto } from '../dto/role.dto'
 import { upload } from '../middlewares/upload.middleware'
-import { authTokenGuard } from '../middlewares/auth-token.middleware'
+import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  authTokenGuard,
   upload.none(),
+  rootRoleGuard(['superadmin', 'admin']),
   validateQueryParams(queryFilterDto),
   asyncHandler(roleController.getAllRoles)
 )
-router.get('/:id', authTokenGuard, asyncHandler(roleController.getRoleById))
+router.get('/:id', rootRoleGuard(['superadmin', 'admin']), asyncHandler(roleController.getRoleById))
+
 router.post(
   '/',
-  authTokenGuard,
   upload.none(),
+  rootRoleGuard(['superadmin']),
   validateBody(CreateRoleDto),
   asyncHandler(roleController.createRole)
 )
 router.patch(
   '/:id',
-  authTokenGuard,
   upload.none(),
+  rootRoleGuard(['superadmin']),
   validateBody(UpdateRoleDto),
   asyncHandler(roleController.updateRole)
 )
 router.delete(
   '/:id',
-  authTokenGuard,
   upload.none(),
+  rootRoleGuard(['superadmin']),
   validateBody(DeleteRoleDto),
   asyncHandler(roleController.deleteRole)
 )
