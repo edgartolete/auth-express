@@ -20,12 +20,11 @@ import { redisClient } from '../services/cache.service'
 export const userController = {
   getAllUsers: async (req: Request, res: Response) => {
     const { keyword, pageNum, pageSize, activeOnly } = getFilters(req)
+
     const appId = await extractAppId(req)
 
     if (!appId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'App ID is required to create action' })
+      return res.status(400).json({ success: false, message: 'App ID is required' })
     }
 
     const conditions: (SQL<unknown> | undefined)[] = []
@@ -70,9 +69,7 @@ export const userController = {
     const appId = await extractAppId(req)
 
     if (!appId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'App ID is required to create action' })
+      return res.status(400).json({ success: false, message: 'App ID is required' })
     }
 
     const conditions: (SQL<unknown> | undefined)[] = []
@@ -81,7 +78,9 @@ export const userController = {
       conditions.push(eq(users.isActive, true))
     }
 
-    conditions.push(eq(users.appId, appId))
+    if (appId) {
+      conditions.push(eq(users.appId, appId))
+    }
 
     conditions.push(eq(users.id, userId))
 
@@ -107,10 +106,9 @@ export const userController = {
     const appId = await extractAppId(req)
 
     if (!appId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'App ID is required to create action' })
+      return res.status(400).json({ success: false, message: 'App ID is required' })
     }
+
     const searchResult = await db.query.users.findFirst({
       where: and(
         eq(users.appId, appId),
@@ -147,9 +145,7 @@ export const userController = {
     const appId = await extractAppId(req)
 
     if (!appId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'App ID is required to create action' })
+      return res.status(400).json({ success: false, message: 'App ID is required' })
     }
 
     const userId = Number(req.params.id)
@@ -186,9 +182,7 @@ export const userController = {
     const appId = await extractAppId(req)
 
     if (!appId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'App ID is required to create action' })
+      return res.status(400).json({ success: false, message: 'App ID is required' })
     }
 
     const whereClause = and(eq(users.id, userId), eq(users.appId, appId))

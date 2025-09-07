@@ -5,7 +5,6 @@ import { and, eq, like, or, SQL, sql } from 'drizzle-orm'
 import { resources } from '../db/schema/resources.schema'
 import { users } from '../db/schema/users.schema'
 import { resourceRoles } from '../db/schema/resourceRoles.schema'
-import { Pool } from 'mysql2/typings/mysql/lib/Pool'
 
 export const resourceController = {
   getAllResources: async (req: Request, res: Response) => {

@@ -93,13 +93,7 @@ export const authController = {
 
       const userAgent = req.headers['user-agent'] || ''
 
-      const search = await db.query.apps.findFirst({ where: eq(apps.code, req.params.appCode) })
-
-      if (!search) {
-        return res.status(400).json({ success: false, message: 'App not found' })
-      }
-
-      const payload = { id: userId, username, appId: search.id }
+      const payload = { id: userId, username, appId: req.appId, appCode: req.params.appCode }
 
       const accessToken = generateAccessToken(payload)
 
@@ -164,7 +158,8 @@ export const authController = {
     const payload = {
       id: searchResult!.id,
       username: searchResult!.username,
-      appId: searchResult!.appId
+      appId: req.appId,
+      appCode: req.params.appCode
     }
 
     //find if user already logged in on same device
@@ -299,7 +294,7 @@ export const authController = {
       return res.status(400).json({ success: false, message: 'Token is invalid' })
     }
 
-    const payload = { id, username, appId }
+    const payload = { id, username, appId, appCode: req.params.appCode }
 
     const accessToken = generateAccessToken(payload)
 

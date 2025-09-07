@@ -1,33 +1,27 @@
 import express, { Router } from 'express'
 import { appController } from '../controllers/app.controller'
 import { asyncHandler } from '../utils/handler.util'
-import { authTokenGuard } from '../middlewares/auth-token.middleware'
 import { rootRoleGuard } from '../middlewares/role-guard.middleware'
 import { queryFilterDto } from '../dto/filter.dto'
 import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
 import { CreateAppDto, DeleteAppDto, UpdateAppDto } from '../dto/app.dto'
 import { upload } from '../middlewares/upload.middleware'
-import {
-  ForgotRequestAuthDto,
-  ForgotSubmitAuthDto,
-  LoginAuthDto,
-  ResetPasswordAuthDto
-} from '../dto/auth.dto'
-import { superUserGuard } from '../middlewares/sp-guard.middleware'
+import { LoginAuthDto } from '../dto/auth.dto'
+import { authTokenGuard } from '../middlewares/auth-token.middleware'
 
 const router: Router = express.Router({ mergeParams: true })
 
 router.get(
   '/',
-  superUserGuard,
   rootRoleGuard(['superadmin']),
+  authTokenGuard,
   validateQueryParams(queryFilterDto),
   asyncHandler(appController.getAllApps)
 )
 
 router.get(
   '/:appCode',
-  superUserGuard,
+  authTokenGuard,
   rootRoleGuard(['superadmin']),
   validateQueryParams(queryFilterDto),
   asyncHandler(appController.getAppById)
@@ -35,7 +29,7 @@ router.get(
 
 router.post(
   '/',
-  superUserGuard,
+  authTokenGuard,
   rootRoleGuard(['superadmin']),
   validateBody(CreateAppDto),
   asyncHandler(appController.createApp)
@@ -43,7 +37,7 @@ router.post(
 
 router.patch(
   '/:appCode',
-  superUserGuard,
+  authTokenGuard,
   rootRoleGuard(['superadmin']),
   validateBody(UpdateAppDto),
   asyncHandler(appController.updateApp)
@@ -51,7 +45,7 @@ router.patch(
 
 router.delete(
   '/:appCode',
-  superUserGuard,
+  authTokenGuard,
   rootRoleGuard(['superadmin']),
   validateBody(DeleteAppDto),
   asyncHandler(appController.deleteApp)
@@ -59,6 +53,12 @@ router.delete(
 
 router.post('/login', upload.none(), validateBody(LoginAuthDto), asyncHandler(appController.login))
 
-router.post('/logout', upload.none(), asyncHandler(appController.logout))
+router.post(
+  '/logout',
+  upload.none(),
+
+  authTokenGuard,
+  asyncHandler(appController.logout)
+)
 
 export { router as appRoutes }

@@ -36,3 +36,10 @@ export async function errorHandler(err: any, req: Request, res: Response, _next:
     stack: !config.isProduction ? err.stack : undefined
   })
 }
+
+export async function errorCodeHandler() {
+  return {
+    '23503': 'Resource is in use and cannot be deleted',
+    '23505': 'Duplicate resource exists'
+  }
+}

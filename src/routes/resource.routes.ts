@@ -56,11 +56,37 @@ router.get(
   asyncHandler(resourceController.getResourceUsers)
 )
 
-// // add or remove user(s) to a resource
-// router.patch(
-//   '/:resourceId/users',
-//   rootRoleGuard(['superadmin', 'admin']),
-//   asyncHandler(resourceController.updateResourceUsers)
-// )
+router.post(
+  '/:resourceId/users',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(resourceController.addResourceUsers)
+)
+
+router.patch(
+  '/:resourceId/users/:userId',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(resourceController.updateResourceUsers)
+)
+
+router.delete(
+  '/:resourceId/users/:userId',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(resourceController.removeResourceUsers)
+)
+
+// return roles + permissions for a resource
+router.get(
+  '/:resourceId/roles/',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(resourceController.getResourceRoles)
+)
+
+// assign role + permissions to a resource.
+// accepts like:  { add: [1, 2], remove: [3] }
+router.patch(
+  '/:resourceId/roles/:roleId',
+  rootRoleGuard(['superadmin', 'admin']),
+  asyncHandler(resourceController.updateResourceRoles)
+)
 
 export { router as resourceRoutes }

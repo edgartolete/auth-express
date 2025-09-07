@@ -1,9 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { extractTokenFromHeader } from '../utils/request.util'
 import { MyJwtPayload, validateToken } from '../utils/token.util'
-import { apps } from '../db/schema/apps.schema'
-import { eq } from 'drizzle-orm'
-import { db } from '../db'
+import { redisClient } from '../services/cache.service'
 
 declare global {
   namespace Express {
@@ -26,15 +24,19 @@ export async function authTokenGuard(req: Request, res: Response, next: NextFunc
     return res.status(401).json({ success: false, message: 'Token Invalid or expired token' })
   }
 
-  const { id, username, appId } = decoded
+  const storedToken = await redisClient.get(`sp-access`)
 
-  const search = await db.query.apps.findFirst({ where: eq(apps.code, req.params.appCode) })
+  if (storedToken === accessToken) {
+    return next()
+  }
 
-  if (!appId || appId !== search?.id) {
+  const { id, username, appId, appCode } = decoded
+
+  if (!appId || appCode !== req.params.appCode) {
     return res.status(401).json({ success: false, message: 'Token Invalid for this App' })
   }
 
-  req.user = { id, username, appId }
+  req.user = { id, username, appId, appCode }
 
   next()
 }
