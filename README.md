@@ -1,4 +1,6 @@
-## Prerequisite
+# Prerequisite
+
+## System Requirements
 
 - Node version: >=20.17.0
 
@@ -21,7 +23,7 @@ DB_PASSWORD - user accounts password
 RESEND_API_KEY - using resend.com generated key to send email
 RESEND_EMAIL - using resend.com email address of the sender
 
-TOKEN_SECRET_KEY - secret key of the jsonwebtoken for authentication
+TOKEN_SECRET_KEY - secret key of the jsonwebtoken for authentication (you can generate on https://zerowp.com/jwt-secret-generator)
 
 AWS_ACCESS_KEY_ID - AWS IAM user key ID
 AWS_SECRET_ACCESS_KEY - AWS IAM user access key

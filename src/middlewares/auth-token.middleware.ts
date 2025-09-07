@@ -31,7 +31,6 @@ export async function authTokenGuard(req: Request, res: Response, next: NextFunc
   const search = await db.query.apps.findFirst({ where: eq(apps.code, req.params.appCode) })
 
   if (!appId || appId !== search?.id) {
-    console.log({ appId, searchAppId: search?.id })
     return res.status(401).json({ success: false, message: 'Token Invalid for this App' })
   }
 
