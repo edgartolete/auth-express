@@ -33,13 +33,8 @@ export const userController = {
 
     conditions.push(eq(users.appId, req.user?.appId!))
 
-    const whereClause =
-      conditions.length > 0
-        ? { where: and(...conditions) }
-        : { where: eq(users.appId, req.user?.appId!) }
-
     const result = await db.query.users.findMany({
-      ...whereClause,
+      where: and(...conditions),
       with: {
         profile: true
       },
@@ -71,13 +66,13 @@ export const userController = {
       conditions.push(eq(users.isActive, true))
     }
 
-    conditions.push(eq(users.id, userId))
+    conditions.push(eq(users.appId, req.user?.appId!))
 
-    const whereClause = { where: conditions.length > 0 ? and(...conditions) : undefined }
+    conditions.push(eq(users.id, userId))
 
     const result = await db.query.users.findFirst({
       columns: { id: true, username: true, email: true, createdAt: true },
-      ...whereClause,
+      where: and(...conditions),
       with: {
         profile: true
       }
@@ -94,9 +89,10 @@ export const userController = {
     })
   },
   createUser: async (req: Request, res: Response) => {
+    const appId = req.user?.appId!
     const searchResult = await db.query.users.findFirst({
       where: and(
-        eq(users.appId, req.user?.appId!),
+        eq(users.appId, appId),
         or(eq(users.username, req.body.username), eq(users.email, req.body.email))
       )
     })
@@ -111,7 +107,7 @@ export const userController = {
     const hashedPassword = bcrypt.hashSync(req.body.password, 10)
 
     const newUser = {
-      appId: req.appId,
+      appId,
       ...req.body,
       password: hashedPassword
     }
@@ -128,7 +124,8 @@ export const userController = {
   },
   updateUser: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
-    const whereClause = eq(users.id, userId)
+    const appId = req.user?.appId!
+    const whereClause = and(eq(users.id, userId), eq(users.appId, appId))
 
     const searchResult = await db.query.users.findFirst({
       columns: { id: true },
@@ -157,7 +154,8 @@ export const userController = {
   },
   deleteUser: async (req: Request, res: Response) => {
     const userId = Number(req.params.id)
-    const whereClause = eq(users.id, userId)
+    const appId = req.user?.appId!
+    const whereClause = and(eq(users.id, userId), eq(users.appId, appId))
 
     const isHardDelete = req.body?.hard
 

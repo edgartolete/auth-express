@@ -65,8 +65,9 @@ export const roleController = {
     res.status(200).json({ success: true, message, data: result })
   },
   createRole: async (req: Request, res: Response) => {
+    const appId = req.user?.appId!
     const searchResult = await db.query.roles.findFirst({
-      where: and(eq(roles.appId, req.user?.appId!), eq(roles.name, req.body.name))
+      where: and(eq(roles.appId, appId), eq(roles.name, req.body.name))
     })
 
     if (searchResult) {
@@ -77,7 +78,7 @@ export const roleController = {
     }
 
     const newRole = {
-      appId: req.appId,
+      appId,
       ...req.body
     }
 

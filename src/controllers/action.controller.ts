@@ -20,10 +20,8 @@ export const actionController = {
 
     conditions.push(eq(actions.appId, req.user?.appId!))
 
-    const whereClause = conditions.length > 0 ? { where: and(...conditions) } : undefined
-
     const result = await db.query.actions.findMany({
-      ...whereClause,
+      where: and(...conditions),
       extras: {
         total: db.$count(actions).as('total')
       },
@@ -51,6 +49,8 @@ export const actionController = {
     if (activeOnly) {
       conditions.push(eq(actions.isActive, true))
     }
+
+    conditions.push(eq(actions.appId, req.user?.appId!))
 
     conditions.push(eq(actions.id, actionId))
 

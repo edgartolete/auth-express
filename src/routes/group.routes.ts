@@ -2,62 +2,78 @@ import express, { Router } from 'express'
 import { groupController } from '../controllers/group.controller'
 import { asyncHandler } from '../utils/handler.util'
 import { rootRoleGuard } from '../middlewares/role-guard.middleware'
+import { validateBody, validateQueryParams } from '../middlewares/validator.middleware'
+import { queryFilterDto } from '../dto/filter.dto'
+import { CreateGroupDto, DeleteGroupDto, UpdateGroupDto } from '../dto/group.dto'
 
 const router: Router = express.Router({ mergeParams: true })
 
 // get all groups
-router.get('/', rootRoleGuard(['superadmin', 'admin']), asyncHandler(groupController.getAllGroups))
+router.get(
+  '/',
+  rootRoleGuard(['superadmin', 'admin']),
+  validateQueryParams(queryFilterDto),
+  asyncHandler(groupController.getAllGroups)
+)
 
 // get single group
 router.get(
-  '/:id',
+  '/:groupId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateQueryParams(queryFilterDto),
   asyncHandler(groupController.getGroupById)
 )
 
 // add group
-router.post('/', rootRoleGuard(['superadmin', 'admin']), asyncHandler(groupController.createGroup))
+router.post(
+  '/',
+  rootRoleGuard(['superadmin', 'admin']),
+  validateBody(CreateGroupDto),
+  asyncHandler(groupController.createGroup)
+)
 
 // update group
 router.patch(
-  '/:id',
+  '/:groupId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(UpdateGroupDto),
   asyncHandler(groupController.updateGroup)
 )
 
 // delete group
 router.delete(
-  '/:id',
+  '/:groupId',
   rootRoleGuard(['superadmin', 'admin']),
+  validateBody(DeleteGroupDto),
   asyncHandler(groupController.deleteGroup)
 )
 
 // get all users from a group
 router.get(
-  '/:id/users',
+  '/:groupId/users',
   rootRoleGuard(['superadmin', 'admin']),
   asyncHandler(groupController.getGroupUsers)
 )
 
 // get all resources form a group
-router.get(
-  '/:id/resources',
-  rootRoleGuard(['superadmin', 'admin']),
-  asyncHandler(groupController.getGroupResources)
-)
-
-// add or remove user(s) from a group
-router.patch(
-  '/:id/users',
-  rootRoleGuard(['superadmin', 'admin']),
-  asyncHandler(groupController.updateGroupUsers)
-)
-
-// add or remove resource(s) from a group
-router.patch(
-  '/:id/resources',
-  rootRoleGuard(['superadmin', 'admin']),
-  asyncHandler(groupController.updateGroupResources)
-)
+// router.get(
+//   '/:groupId/resources',
+//   rootRoleGuard(['superadmin', 'admin']),
+//   asyncHandler(groupController.getGroupResources)
+// )
+//
+// // add or remove user(s) from a group
+// router.patch(
+//   '/:groupId/users',
+//   rootRoleGuard(['superadmin', 'admin']),
+//   asyncHandler(groupController.updateGroupUsers)
+// )
+//
+// // add or remove resource(s) from a group
+// router.patch(
+//   '/:groupId/resources',
+//   rootRoleGuard(['superadmin', 'admin']),
+//   asyncHandler(groupController.updateGroupResources)
+// )
 
 export { router as groupRoutes }
